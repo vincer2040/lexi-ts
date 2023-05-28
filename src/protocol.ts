@@ -8,7 +8,7 @@ export type SimpleString = keyof typeof SimpleStrings;
 
 const MAX_BUF_LEN = 4096;
 
-export default class Protocol {
+export class ProtocolBuilder {
     private insert: number;
     private buf: ArrayBuffer;
     private bufView: Uint8Array;
@@ -18,7 +18,7 @@ export default class Protocol {
         this.insert = 0;
     }
 
-    public addSimple(s: SimpleString): Protocol {
+    public addSimple(s: SimpleString): ProtocolBuilder {
         let add = SimpleStrings[s];
         let len = add.length;
         let i: number;
@@ -31,7 +31,7 @@ export default class Protocol {
         return this;
     }
 
-    public addBulkString(s: string): Protocol {
+    public addBulkString(s: string): ProtocolBuilder {
         let len = s.length;
         let lenToString = len.toString();
         let lenOfLenString = lenToString.length;
@@ -55,7 +55,7 @@ export default class Protocol {
         return this;
     }
 
-    public addArray(len: number): Protocol {
+    public addArray(len: number): ProtocolBuilder {
         let lenToString = len.toString();
         let lenOfLenString = lenToString.length;
         let i: number;

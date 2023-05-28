@@ -1,11 +1,11 @@
-import Protocol from "../src/protocol";
+import { ProtocolBuilder } from "../src/protocol";
 import { expect, it, describe, beforeEach } from "vitest";
 
 
 describe("protocol", () => {
-    let protocol: Protocol;
+    let protocol: ProtocolBuilder;
     beforeEach(() => {
-        protocol = new Protocol();
+        protocol = new ProtocolBuilder();
     });
 
     it("can create simple strings", () => {
