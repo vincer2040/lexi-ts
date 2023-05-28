@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "description": "",
     "type": "module",
-    "main": "dist/index.js",
+    "main": "dist/LexiClient.js",
+    "types": "dist/LexiClient.d.ts",
     "scripts": {
         "build": "tsc",
         "dev": "vitest",
