@@ -77,3 +77,91 @@ export class ProtocolBuilder {
     }
 }
 
+export const ProtocolTypes = ["BulkString", "Array", "Invalid"] as const;
+export type ProtocolType = typeof ProtocolTypes[number];
+
+export type UnpackedProtocol = {
+    type: ProtocolType,
+    value: string | Array<string> | null;
+}
+
+export class ProtocolUnpacker {
+    private position: number;
+    constructor(private data: Uint8Array) {
+        this.position = 0;
+    }
+
+    private getType(): ProtocolType {
+        if (this.data[this.position] === 42) {
+            return "Array";
+        }
+        if (this.data[this.position] === 36) {
+            return "BulkString";
+        }
+        return "Invalid";
+    }
+
+    private getLen(): number {
+        let len: number = 0;
+        for (; this.data[this.position] !== "\r".charCodeAt(0); this.position++) {
+            let idx = "0".charCodeAt(0);
+            len = (len * 10) + (this.data[this.position] - idx);
+        }
+        return len;
+    }
+
+    private unpackBulk(len: number): string {
+        let t = this.data.slice(this.position, this.position + len);
+        return new TextDecoder().decode(t);
+    }
+
+    private unpackArray(len: number): Array<string> {
+        let out = new Array();
+        let i: number;
+        for (i = 0; i < len; i++) {
+            if (this.getType() != "BulkString") {
+                throw new Error("invalid");
+            }
+            this.position++;
+            let len = this.getLen();
+            this.position++;
+            this.position++;
+            let t = this.unpackBulk(len);
+            out.push(t);
+            this.position += len + 2;
+        }
+        return out;
+    }
+
+    public unpack(): UnpackedProtocol {
+        if (this.getType() === "Array") {
+            this.position++;
+            let len = this.getLen();
+            this.position++;
+            this.position++;
+            let out = this.unpackArray(len);
+            return {
+                type: "Array",
+                value: out,
+            }
+        }
+        if (this.getType() === "BulkString") {
+            let len: number;
+            let out: string;
+            this.position++;
+            len = this.getLen();
+            this.position++;
+            this.position++;
+            out = this.unpackBulk(len);
+            return {
+                type: "BulkString",
+                value: out,
+            }
+        }
+        return {
+            type: "Invalid",
+            value: null,
+        }
+    }
+}
+
