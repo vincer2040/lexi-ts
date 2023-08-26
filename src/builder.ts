@@ -21,7 +21,6 @@ export class Builder {
         let newLen = this.ins + needed;
         if (newLen >= this.capacity) {
             let buf: Buffer;
-            let i: number;
             this.capacity += newLen;
             try {
                 buf = Buffer.alloc(this.capacity, 0);
@@ -29,9 +28,7 @@ export class Builder {
                 return false;
             }
 
-            for (i = 0; i < this.ins; ++i) {
-                buf[i] = this.buf[i];
-            }
+            this.buf.copy(buf);
 
             this.buf = buf;
         }
