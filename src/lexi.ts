@@ -59,7 +59,7 @@ export class Lexi {
     }
 
     /**
-     * set a key and value
+     * get a value
      * @param {string} key - the key to get
      * @returns Promise<void>
      */
@@ -78,7 +78,7 @@ export class Lexi {
     }
 
     /**
-     * set a key and value
+     * delete a value
      * @param {string} key - the key to delete
      * @returns Promise<void>
      */
