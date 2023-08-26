@@ -2,13 +2,13 @@ import type { Token } from "./token.js";
 import { Tokens } from "./token.js";
 
 export class Lexer {
-    private input: string;
+    private input: Buffer;
     // private pos: number;
     private readPos: number;
     private len: number;
     private ch: number;
 
-    constructor(input: string) {
+    constructor(input: Buffer) {
         this.input = input;
         this.len = input.length;
         this.readPos = 0;
@@ -20,7 +20,7 @@ export class Lexer {
         if (this.readPos >= this.len) {
             this.ch = 0;
         } else {
-            this.ch = this.input.charCodeAt(this.readPos);
+            this.ch = this.input[this.readPos];
         }
         // this.pos = this.readPos;
         this.readPos++;

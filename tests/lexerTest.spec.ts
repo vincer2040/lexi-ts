@@ -6,7 +6,7 @@ import type { Token } from "../src/token";
 describe("lexer", () => {
     it("can lex bulk strings", () => {
         let input = "$7\r\nis cool\r\n";
-        let lex = new Lexer(input);
+        let lex = new Lexer(Buffer.from(input));
         let expTokens: Array<Token> = [
             { type: Tokens.type, literal: "$", },
             { type: Tokens.len, literal: "7", },
@@ -30,7 +30,7 @@ describe("lexer", () => {
 
     it("can lex simple strings", () => {
         let input = "+Ok\r\n";
-        let lex = new Lexer(input);
+        let lex = new Lexer(Buffer.from(input));
         let expTokens: Array<Token> = [
             { type: Tokens.simple, literal: "Ok", },
             { type: Tokens.retcar, literal: "\r", },
@@ -49,7 +49,7 @@ describe("lexer", () => {
 
     it("can lex arrays", () => {
         let input = "*2\r\n$7\r\nis cool\r\n$5\r\nvince\r\n";
-        let lex = new Lexer(input);
+        let lex = new Lexer(Buffer.from(input));
         let expTokens: Array<Token> = [
             { type: Tokens.type, literal: "*", },
             { type: Tokens.len, literal: "2", },

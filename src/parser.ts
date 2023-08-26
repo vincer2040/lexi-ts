@@ -7,7 +7,7 @@ import type { LexiValue } from "./lexitypes.js";
 export class Parser extends Lexer {
     private cur: Token;
     private peek: Token;
-    constructor(input: string) {
+    constructor(input: Buffer) {
         super(input);
         this.nextToken();
         this.nextToken();
