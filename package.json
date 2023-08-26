@@ -7,7 +7,7 @@
     "types": "dist/LexiClient.d.ts",
     "scripts": {
         "build": "tsc",
-        "start": "pnpm build && node ./dist/main.js",
+        "start": "pnpm build && node ./dist/example.js",
         "dev": "vitest",
         "test": "vitest run"
     },
