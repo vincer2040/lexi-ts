@@ -55,7 +55,7 @@ export class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        console.log(lexiVal.value);
     }
 
     /**
@@ -93,6 +93,57 @@ export class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
+        console.log(lexiVal);
+    }
+
+    /**
+     * push a value
+     * @param {string} value - the value to push
+     * @returns Promise<void>
+     */
+    public async push(value: string): Promise<void> {
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("PUSH")
+            .addBulk(value)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    /**
+     * pop a value
+     * @returns Promise<void>
+     */
+    public async pop(): Promise<void> {
+        let buf = new Builder()
+            .addBulk("POP")
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    /**
+     * create a new cluster
+     * @param {string} name - the name of the cluster
+     * @returns Promise<void>
+     */
+    public async cluster_new(name: string): Promise<void> {
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("CLUSTER.NEW")
+            .addBulk(name)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
         console.log(lexiVal);
     }
 
