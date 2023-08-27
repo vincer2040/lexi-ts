@@ -9,5 +9,5 @@ export type LexiType = keyof typeof LexiTypes;
 
 export type LexiValue = {
     type: LexiType,
-    value: string | Array<LexiValue> | number | null,
+    value: Array<LexiValue> | string | number | null,
 }
