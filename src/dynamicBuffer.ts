@@ -31,7 +31,6 @@ export class DynamicBuffer {
 
     private reallocBuf(needed: number): boolean {
         let buf: Buffer;
-        let i: number;
         this.cap += needed;
         try {
             buf = Buffer.alloc(this.cap, 0);
@@ -39,9 +38,7 @@ export class DynamicBuffer {
             return false;
         }
 
-        for (i = 0; i < this.ins; ++i) {
-            buf[i] = this.buf[i];
-        }
+        this.buf.copy(buf);
 
         this.buf = buf;
 
