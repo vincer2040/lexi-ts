@@ -23,5 +23,11 @@ await client.clusterGet("fam", "vince");
 await client.clusterDel("fam", "vince");
 await client.clusterDrop("fam");
 
+await client.push("is cool");
+await client.push("vince");
+
+await client.pop();
+await client.pop();
+
 client.close();
 

@@ -138,6 +138,22 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    public async pushInt(value: number): Promise<void> {
+        if (!this.isWholeNumber(value)) {
+            throw new Error("value must be a whole number");
+        }
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("PUSH")
+            .add64BitInt(BigInt(value))
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
     /**
      * pop a value
      * @returns Promise<void>
