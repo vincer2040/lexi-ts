@@ -37,6 +37,8 @@ export class Parser extends Lexer {
                     return lexiVal;
                 }
 
+                this.nextToken();
+
                 let i: number;
 
                 for (i = 0; i < len; ++i) {
