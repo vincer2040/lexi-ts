@@ -58,6 +58,24 @@ export class Lexi {
         console.log(lexiVal.value);
     }
 
+    public async setInt(key: string, value: number): Promise<void> {
+        if (!this.isWholeNumber(value)) {
+            throw new Error("invalid integer, must be a whole number");
+        }
+        let buf = new Builder()
+            .addArr(3)
+            .addBulk("SET")
+            .addBulk(key)
+            .add64BitInt(BigInt(value))
+            .out();
+
+        await this.send(buf);
+        let d = await this.read();
+        let parser = new Parser(d);
+        let lexiVal = parser.parse();
+        console.log(lexiVal.value);
+    }
+
     /**
      * get a value
      * @param {string} key - the key to get
@@ -152,8 +170,9 @@ export class Lexi {
             if (!this.socket.writable) {
                 rej("socket is not writable");
             }
-            let b = buf[0].filter(x => x !== 0);
-            this.socket.write(b, () => {
+            // why is there no socket.write with a length? what
+            // a messy language
+            this.socket.write(buf[0], () => {
                 res();
             });
         })
@@ -175,5 +194,9 @@ export class Lexi {
                 rej(e);
             }
         });
+    }
+
+    private isWholeNumber(int: number): boolean {
+        return Math.round(int) === int;
     }
 }

@@ -7,5 +7,9 @@ await client.connect();
 await client.set("vince", "is cool");
 await client.get("vince");
 await client.del("vince");
+
+await client.setInt("vince", 42069);
+await client.get("vince");
+
 client.close();
 

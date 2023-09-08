@@ -3,7 +3,6 @@ import { Tokens } from "./token.js";
 
 export class Lexer {
     private input: Buffer;
-    // private pos: number;
     private readPos: number;
     private len: number;
     private ch: number;
@@ -12,7 +11,6 @@ export class Lexer {
         this.input = input;
         this.len = input.length;
         this.readPos = 0;
-        // this.pos = 0;
         this.readChar();
     }
 
@@ -22,7 +20,6 @@ export class Lexer {
         } else {
             this.ch = this.input[this.readPos];
         }
-        // this.pos = this.readPos;
         this.readPos++;
     }
 
@@ -36,12 +33,15 @@ export class Lexer {
         return simple;
     }
 
-    private readInt(): void {
+    private readInt(): Buffer {
+        let buf = Buffer.alloc(8);
         this.readChar();
         let i: number;
         for (i = 0; i < 8; ++i) {
+            buf[i] = this.ch;
             this.readChar();
         }
+        return buf;
     }
 
     private isDigit(c: number): boolean {
@@ -82,10 +82,9 @@ export class Lexer {
                 ret.type = Tokens.type;
                 break;
             case 58: // int
-                ret.literal = ":"
-                this.readInt();
-                ret.type = Tokens.type;
-                break;
+                ret.literal = this.readInt();
+                ret.type = Tokens.int;
+                return ret;
             case 43: // simple
                 ret.literal = this.readSimple();
                 ret.type = Tokens.simple;

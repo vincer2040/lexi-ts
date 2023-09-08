@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Lexer } from "../src/lexer";
 import { Tokens } from "../src/token";
+import { Builder } from "../src/builder";
 import type { Token } from "../src/token";
 
 describe("lexer", () => {
@@ -82,5 +83,25 @@ describe("lexer", () => {
         }
     })
 
-    it.todo("can lex integers");
+    it("can lex integers", () => {
+        let builder = new Builder();
+        let lit = Buffer.from([0, 0, 0, 0, 0, 0, 0xa4, 0x55,]);
+        let tests = [
+            { type: Tokens.int, literal: lit },
+            { type: Tokens.retcar, literal: "\r" },
+            { type: Tokens.newl, literal: "\n" },
+        ];
+
+        let [buf, _] = builder
+            .add64BitInt(BigInt(42069))
+            .out();
+        let l = new Lexer(buf);
+        let i: number, len = tests.length;
+        for (i = 0; i < len; ++i) {
+            let expAt = tests[i];
+            let tok = l.lnextToken();
+            expect(tok.type).toBe(expAt.type);
+            expect(tok.literal).toEqual(expAt.literal);
+        }
+    });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Parser } from "../src/parser";
 import { LexiTypes, LexiValue } from "../src/lexitypes";
+import { Builder } from "../src/builder";
 
 describe("parser", () => {
     it("can parse bulk strings", () => {
@@ -34,6 +35,17 @@ describe("parser", () => {
         expect(lexiVal.value).toBe("OK");
     });
 
-    it.todo("can parse integers");
+    it("can parse integers", () => {
+        let builder = new Builder();
+
+        let [buf, _] = builder
+            .add64BitInt(BigInt(42069))
+            .out();
+
+        let parser = new Parser(buf);
+        let lexiVal = parser.parse();
+        expect(lexiVal.type).toBe(LexiTypes.int);
+        expect(lexiVal.value).toBe(BigInt(42069));
+    });
 });
 

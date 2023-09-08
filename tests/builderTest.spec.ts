@@ -30,4 +30,25 @@ describe("builder", () => {
         expect(ts).toBe(expString);
     });
 
+    it("can build big ints", () => {
+        let builder = new Builder();
+        let num = BigInt(42069);
+
+        let [buf, len] = builder
+            .add64BitInt(num)
+            .out();
+
+        expect(len).toBe(11);
+        expect(buf[0]).toBe(":".charCodeAt(0));
+        expect(buf[1]).toBe("\0".charCodeAt(0));
+        expect(buf[2]).toBe("\0".charCodeAt(0));
+        expect(buf[3]).toBe("\0".charCodeAt(0));
+        expect(buf[4]).toBe("\0".charCodeAt(0));
+        expect(buf[5]).toBe("\0".charCodeAt(0));
+        expect(buf[6]).toBe("\0".charCodeAt(0));
+        expect(buf[7]).toBe(164);
+        expect(buf[8]).toBe(85);
+        expect(buf[9]).toBe("\r".charCodeAt(0));
+        expect(buf[10]).toBe("\n".charCodeAt(0));
+    })
 });

@@ -14,5 +14,5 @@ export type TokenT = keyof typeof Tokens;
 
 export type Token = {
     type: TokenT,
-    literal: string,
+    literal: string | Buffer,
 }

@@ -3,6 +3,7 @@ const TypeBytes = {
     Bulk: "$".charCodeAt(0),
     RetCar: "\r".charCodeAt(0),
     NewLine: "\n".charCodeAt(0),
+    Int: ":".charCodeAt(0),
 } as const;
 
 export class Builder {
@@ -88,6 +89,17 @@ export class Builder {
 
         this.addEnd();
 
+        return this;
+    }
+
+    public add64BitInt(int: bigint): Builder {
+        let lenToAppend = 11;
+        this.checkForRealloc(lenToAppend);
+        this.buf[this.ins] = TypeBytes.Int;
+        this.ins++;
+        this.buf.writeBigInt64BE(int, this.ins);
+        this.ins += 8;
+        this.addEnd();
         return this;
     }
 

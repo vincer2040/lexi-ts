@@ -82,9 +82,23 @@ export class Parser extends Lexer {
         }
 
         if (this.curTokIs(Tokens.simple)) {
-            lexiVal.value = this.cur.literal;
+            lexiVal.value = this.cur.literal as string;
             lexiVal.type = LexiTypes.simple;
             return lexiVal;
+        }
+
+        if (this.curTokIs(Tokens.int)) {
+            let val = BigInt(0);
+            let i: number;
+            let b = this.cur.literal as Buffer;
+            let s = BigInt(8);
+            for (i = 0; i < 8; ++i) {
+                val = (val << s) | BigInt(b[i]);
+            }
+            lexiVal.value = val;
+            lexiVal.type = LexiTypes.int;
+            this.expectPeek(Tokens.retcar);
+            this.expectPeek(Tokens.newl);
         }
 
         return lexiVal;
