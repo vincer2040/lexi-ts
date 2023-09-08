@@ -1,7 +1,7 @@
 import { Builder } from "./builder.js";
-import { Socket } from "net";
 import { DynamicBuffer } from "./dynamicBuffer.js";
 import { Parser } from "./parser.js";
+import { Socket } from "net";
 
 export default class Lexi {
     private addr: string
@@ -121,6 +121,51 @@ export default class Lexi {
     }
 
     /**
+     * get all the keys
+     * @returns Promise<void>
+     */
+    public async keys(): Promise<void> {
+        let buf = new Builder()
+            .addBulk("KEYS")
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let parser = new Parser(d);
+        let lexiVal = parser.parse();
+        console.log(lexiVal);
+    }
+
+    /**
+     * get all the values
+     * @returns Promise<void>
+     */
+    public async values(): Promise<void> {
+        let buf = new Builder()
+            .addBulk("VALUES")
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let parser = new Parser(d);
+        let lexiVal = parser.parse();
+        console.log(lexiVal);
+    }
+
+    /**
+     * get all the entries
+     * @returns Promise<void>
+     */
+    public async entries(): Promise<void> {
+        let buf = new Builder()
+            .addBulk("ENTRIES")
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let parser = new Parser(d);
+        let lexiVal = parser.parse();
+        console.log(lexiVal);
+    }
+
+    /**
      * push a value
      * @param {string} value - the value to push
      * @returns Promise<void>
@@ -138,6 +183,11 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    /**
+     * push an integeer
+     * @param {number} value - the integer to push - must be a whole number
+     * @returns Promise<void>
+     */
     public async pushInt(value: number): Promise<void> {
         if (!this.isWholeNumber(value)) {
             throw new Error("value must be a whole number");
@@ -187,6 +237,13 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    /**
+     * set a value in a cluster
+     * @param {string} name - the name of the cluster
+     * @param {string} key - the key to set
+     * @param {string} value - the value to set
+     * @returns Promise<void>
+     */
     public async clusterSet(name: string, key: string, value: string): Promise<void> {
         let buf = new Builder()
             .addArr(4)
@@ -202,6 +259,13 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    /**
+     * set an integer in a cluster
+     * @param {string} name - the name of the cluster
+     * @param {string} key - the key to set
+     * @param {number} value - the integer to set - must be a whole number
+     * @returns Promise<void>
+     */
     public async clusterSetInt(name: string, key: string, value: number): Promise<void> {
         if (!this.isWholeNumber(value)) {
             throw new Error("value must be a whole number");
@@ -220,6 +284,12 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    /**
+     * get a value from a cluster
+     * @param {string} name - the name of the cluster
+     * @param {string} key - the key to get
+     * @returns Promise<void>
+     */
     public async clusterGet(name: string, key: string): Promise<void> {
         let buf = new Builder()
             .addArr(3)
@@ -234,6 +304,12 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    /**
+     * delete a value from a cluster
+     * @param {string} name - the name of the cluster
+     * @param {string} key - the key to delete
+     * @returns Promise<void>
+     */
     public async clusterDel(name: string, key: string): Promise<void> {
         let buf = new Builder()
             .addArr(3)
@@ -248,6 +324,11 @@ export default class Lexi {
         console.log(lexiVal);
     }
 
+    /**
+     * drop a cluster - this deletes the while cluster
+     * @param {string} name - the name of the cluster
+     * @returns Promise<void>
+     */
     public async clusterDrop(name: string): Promise<void> {
         let buf = new Builder()
             .addArr(2)

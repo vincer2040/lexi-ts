@@ -29,5 +29,9 @@ await client.push("vince");
 await client.pop();
 await client.pop();
 
+await client.keys();
+await client.values();
+await client.entries();
+
 client.close();
 
