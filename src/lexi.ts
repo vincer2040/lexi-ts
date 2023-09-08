@@ -3,7 +3,7 @@ import { Socket } from "net";
 import { DynamicBuffer } from "./dynamicBuffer.js";
 import { Parser } from "./parser.js";
 
-export class Lexi {
+export default class Lexi {
     private addr: string
     private port: number;
     private socket: Socket;
@@ -55,9 +55,15 @@ export class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal.value);
+        console.log(lexiVal);
     }
 
+    /**
+     * set a key and 64 bit integer value
+     * @param {string} key - the key to be set
+     * @param {number} value - the number to set - must be a whole number
+     * @returns Promise<void>
+     */
     public async setInt(key: string, value: number): Promise<void> {
         if (!this.isWholeNumber(value)) {
             throw new Error("invalid integer, must be a whole number");
@@ -73,7 +79,7 @@ export class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal.value);
+        console.log(lexiVal);
     }
 
     /**
@@ -152,10 +158,84 @@ export class Lexi {
      * @param {string} name - the name of the cluster
      * @returns Promise<void>
      */
-    public async cluster_new(name: string): Promise<void> {
+    public async clusterNew(name: string): Promise<void> {
         let buf = new Builder()
             .addArr(2)
             .addBulk("CLUSTER.NEW")
+            .addBulk(name)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    public async clusterSet(name: string, key: string, value: string): Promise<void> {
+        let buf = new Builder()
+            .addArr(4)
+            .addBulk("CLUSTER.SET")
+            .addBulk(name)
+            .addBulk(key)
+            .addBulk(value)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    public async clusterSetInt(name: string, key: string, value: number): Promise<void> {
+        if (!this.isWholeNumber(value)) {
+            throw new Error("value must be a whole number");
+        }
+        let buf = new Builder()
+            .addArr(4)
+            .addBulk("CLUSTER.SET")
+            .addBulk(name)
+            .addBulk(key)
+            .add64BitInt(BigInt(value))
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    public async clusterGet(name: string, key: string): Promise<void> {
+        let buf = new Builder()
+            .addArr(3)
+            .addBulk("CLUSTER.GET")
+            .addBulk(name)
+            .addBulk(key)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    public async clusterDel(name: string, key: string): Promise<void> {
+        let buf = new Builder()
+            .addArr(3)
+            .addBulk("CLUSTER.DEL")
+            .addBulk(name)
+            .addBulk(key)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        console.log(lexiVal);
+    }
+
+    public async clusterDrop(name: string): Promise<void> {
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("CLUSTER.DROP")
             .addBulk(name)
             .out();
         await this.send(buf);

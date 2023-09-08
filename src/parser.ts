@@ -99,6 +99,7 @@ export class Parser extends Lexer {
             lexiVal.type = LexiTypes.int;
             this.expectPeek(Tokens.retcar);
             this.expectPeek(Tokens.newl);
+            return lexiVal;
         }
 
         return lexiVal;
