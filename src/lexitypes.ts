@@ -7,7 +7,10 @@ export const LexiTypes = {
 
 export type LexiType = keyof typeof LexiTypes;
 
+export type LexiVal = Array<LexiValue> | string | number | bigint | null;
+
 export type LexiValue = {
     type: LexiType,
-    value: Array<LexiValue> | string | number | bigint | null,
+    value: LexiVal,
 }
+
