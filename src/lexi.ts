@@ -8,11 +8,13 @@ export default class Lexi {
     private addr: string
     private port: number;
     private socket: Socket;
+    private builder: Builder;
 
     constructor(addr: string, port: number) {
         this.addr = addr;
         this.port = port;
         this.socket = new Socket();
+        this.builder = new Builder();
     }
 
     /**
@@ -35,6 +37,7 @@ export default class Lexi {
     /**
      * close the connection
      * @throws error if node fails to destory socket
+     * @returns void
      */
     public close(): void {
         this.socket.destroy();
@@ -47,7 +50,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async set(key: string, value: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(3)
             .addBulk("SET")
             .addBulk(key)
@@ -71,7 +75,8 @@ export default class Lexi {
         if (!this.isWholeNumber(value)) {
             throw new Error("invalid integer, must be a whole number");
         }
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(3)
             .addBulk("SET")
             .addBulk(key)
@@ -91,7 +96,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async get(key: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("GET")
             .addBulk(key)
@@ -110,7 +116,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async del(key: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("DEL")
             .addBulk(key)
@@ -128,7 +135,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async keys(): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addBulk("KEYS")
             .out();
         await this.send(buf);
@@ -143,7 +151,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async values(): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addBulk("VALUES")
             .out();
         await this.send(buf);
@@ -158,7 +167,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async entries(): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addBulk("ENTRIES")
             .out();
         await this.send(buf);
@@ -174,7 +184,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async push(value: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("PUSH")
             .addBulk(value)
@@ -195,7 +206,8 @@ export default class Lexi {
         if (!this.isWholeNumber(value)) {
             throw new Error("value must be a whole number");
         }
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("PUSH")
             .add64BitInt(BigInt(value))
@@ -212,7 +224,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async pop(): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addBulk("POP")
             .out();
         await this.send(buf);
@@ -228,7 +241,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async clusterNew(name: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("CLUSTER.NEW")
             .addBulk(name)
@@ -248,7 +262,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async clusterSet(name: string, key: string, value: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(4)
             .addBulk("CLUSTER.SET")
             .addBulk(name)
@@ -273,7 +288,8 @@ export default class Lexi {
         if (!this.isWholeNumber(value)) {
             throw new Error("value must be a whole number");
         }
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(4)
             .addBulk("CLUSTER.SET")
             .addBulk(name)
@@ -294,7 +310,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async clusterGet(name: string, key: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(3)
             .addBulk("CLUSTER.GET")
             .addBulk(name)
@@ -314,7 +331,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async clusterDel(name: string, key: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(3)
             .addBulk("CLUSTER.DEL")
             .addBulk(name)
@@ -333,7 +351,8 @@ export default class Lexi {
      * @returns Promise<LexiVal>
      */
     public async clusterDrop(name: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("CLUSTER.DROP")
             .addBulk(name)
@@ -346,7 +365,8 @@ export default class Lexi {
     }
 
     public async clusterKeys(name: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("CLUSTER.KEYS")
             .addBulk(name)
@@ -359,7 +379,8 @@ export default class Lexi {
     }
 
     public async clusterValues(name: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("CLUSTER.VALUES")
             .addBulk(name)
@@ -372,7 +393,8 @@ export default class Lexi {
     }
 
     public async clusterEntries(name: string): Promise<LexiVal> {
-        let buf = new Builder()
+        let buf = this.builder
+            .reset()
             .addArr(2)
             .addBulk("CLUSTER.ENTRIES")
             .addBulk(name)
@@ -389,11 +411,15 @@ export default class Lexi {
             if (!this.socket.writable) {
                 rej("socket is not writable");
             }
-            // why is there no socket.write with a length? what
-            // a messy language
-            this.socket.write(buf[0], () => {
-                res();
-            });
+            try {
+                // why is there no socket.write with a length? what
+                // a messy language
+                this.socket.write(buf[0], () => {
+                    res();
+                });
+            } catch(e) {
+                rej(e);
+            }
         })
     }
 
