@@ -7,7 +7,7 @@ an in-memory data structure database.
 
 ```ts
 
-import { Lexi } from "lexi";
+import Lexi from "lexi";
 
 async function example() {
     let client = new Lexi(<addr>, <port>);
