@@ -1,5 +1,6 @@
 import { Builder } from "./builder.js";
 import { DynamicBuffer } from "./dynamicBuffer.js";
+import { LexiVal } from "./lexitypes.js";
 import { Parser } from "./parser.js";
 import { Socket } from "net";
 
@@ -16,6 +17,7 @@ export default class Lexi {
 
     /**
      * create a connection to the database
+     * @throws error if socket fails to connect
      * @returns Promise<void>
      */
     public connect(): Promise<void> {
@@ -32,6 +34,7 @@ export default class Lexi {
 
     /**
      * close the connection
+     * @throws error if node fails to destory socket
      */
     public close(): void {
         this.socket.destroy();
@@ -41,9 +44,9 @@ export default class Lexi {
      * set a key and value
      * @param {string} key - the key to set
      * @param {string} value - the value to set the key to
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async set(key: string, value: string): Promise<void> {
+    public async set(key: string, value: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(3)
             .addBulk("SET")
@@ -55,16 +58,16 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * set a key and 64 bit integer value
      * @param {string} key - the key to be set
      * @param {number} value - the number to set - must be a whole number
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async setInt(key: string, value: number): Promise<void> {
+    public async setInt(key: string, value: number): Promise<LexiVal> {
         if (!this.isWholeNumber(value)) {
             throw new Error("invalid integer, must be a whole number");
         }
@@ -79,15 +82,15 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * get a value
      * @param {string} key - the key to get
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async get(key: string): Promise<void> {
+    public async get(key: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(2)
             .addBulk("GET")
@@ -98,15 +101,15 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * delete a value
      * @param {string} key - the key to delete
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async del(key: string): Promise<void> {
+    public async del(key: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(2)
             .addBulk("DEL")
@@ -117,14 +120,14 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * get all the keys
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async keys(): Promise<void> {
+    public async keys(): Promise<LexiVal> {
         let buf = new Builder()
             .addBulk("KEYS")
             .out();
@@ -132,14 +135,14 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * get all the values
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async values(): Promise<void> {
+    public async values(): Promise<LexiVal> {
         let buf = new Builder()
             .addBulk("VALUES")
             .out();
@@ -147,14 +150,14 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * get all the entries
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async entries(): Promise<void> {
+    public async entries(): Promise<LexiVal> {
         let buf = new Builder()
             .addBulk("ENTRIES")
             .out();
@@ -162,15 +165,15 @@ export default class Lexi {
         let d = await this.read();
         let parser = new Parser(d);
         let lexiVal = parser.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * push a value
      * @param {string} value - the value to push
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async push(value: string): Promise<void> {
+    public async push(value: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(2)
             .addBulk("PUSH")
@@ -180,15 +183,15 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * push an integeer
      * @param {number} value - the integer to push - must be a whole number
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async pushInt(value: number): Promise<void> {
+    public async pushInt(value: number): Promise<LexiVal> {
         if (!this.isWholeNumber(value)) {
             throw new Error("value must be a whole number");
         }
@@ -201,14 +204,14 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * pop a value
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async pop(): Promise<void> {
+    public async pop(): Promise<LexiVal> {
         let buf = new Builder()
             .addBulk("POP")
             .out();
@@ -216,15 +219,15 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * create a new cluster
      * @param {string} name - the name of the cluster
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async clusterNew(name: string): Promise<void> {
+    public async clusterNew(name: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(2)
             .addBulk("CLUSTER.NEW")
@@ -234,7 +237,7 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
@@ -242,9 +245,9 @@ export default class Lexi {
      * @param {string} name - the name of the cluster
      * @param {string} key - the key to set
      * @param {string} value - the value to set
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async clusterSet(name: string, key: string, value: string): Promise<void> {
+    public async clusterSet(name: string, key: string, value: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(4)
             .addBulk("CLUSTER.SET")
@@ -256,7 +259,7 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
@@ -264,9 +267,9 @@ export default class Lexi {
      * @param {string} name - the name of the cluster
      * @param {string} key - the key to set
      * @param {number} value - the integer to set - must be a whole number
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async clusterSetInt(name: string, key: string, value: number): Promise<void> {
+    public async clusterSetInt(name: string, key: string, value: number): Promise<LexiVal> {
         if (!this.isWholeNumber(value)) {
             throw new Error("value must be a whole number");
         }
@@ -281,16 +284,16 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * get a value from a cluster
      * @param {string} name - the name of the cluster
      * @param {string} key - the key to get
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async clusterGet(name: string, key: string): Promise<void> {
+    public async clusterGet(name: string, key: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(3)
             .addBulk("CLUSTER.GET")
@@ -301,16 +304,16 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * delete a value from a cluster
      * @param {string} name - the name of the cluster
      * @param {string} key - the key to delete
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async clusterDel(name: string, key: string): Promise<void> {
+    public async clusterDel(name: string, key: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(3)
             .addBulk("CLUSTER.DEL")
@@ -321,15 +324,15 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
     }
 
     /**
      * drop a cluster - this deletes the while cluster
      * @param {string} name - the name of the cluster
-     * @returns Promise<void>
+     * @returns Promise<LexiVal>
      */
-    public async clusterDrop(name: string): Promise<void> {
+    public async clusterDrop(name: string): Promise<LexiVal> {
         let buf = new Builder()
             .addArr(2)
             .addBulk("CLUSTER.DROP")
@@ -339,7 +342,46 @@ export default class Lexi {
         let d = await this.read();
         let p = new Parser(d);
         let lexiVal = p.parse();
-        console.log(lexiVal);
+        return lexiVal.value;
+    }
+
+    public async clusterKeys(name: string): Promise<LexiVal> {
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("CLUSTER.KEYS")
+            .addBulk(name)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        return lexiVal.value;
+    }
+
+    public async clusterValues(name: string): Promise<LexiVal> {
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("CLUSTER.VALUES")
+            .addBulk(name)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        return lexiVal.value;
+    }
+
+    public async clusterEntries(name: string): Promise<LexiVal> {
+        let buf = new Builder()
+            .addArr(2)
+            .addBulk("CLUSTER.ENTRIES")
+            .addBulk(name)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        return lexiVal.value;
     }
 
     private send(buf: [Buffer, number]): Promise<void> {
