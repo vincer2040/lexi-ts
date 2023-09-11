@@ -18,39 +18,6 @@ export class Builder {
         this.ins = 0;
     }
 
-    private checkForRealloc(needed: number): boolean {
-        let newLen = this.ins + needed;
-        if (newLen >= this.capacity) {
-            let buf: Buffer;
-            this.capacity += newLen;
-            try {
-                buf = Buffer.alloc(this.capacity, 0);
-            } catch (_) {
-                return false;
-            }
-
-            this.buf.copy(buf);
-
-            this.buf = buf;
-        }
-
-        return true;
-    }
-
-    private addLength(len: string, lenOfLen: number): void {
-        let i: number;
-        for (i = 0; i < lenOfLen; ++i, ++this.ins) {
-            this.buf[this.ins] = len.charCodeAt(i);
-        }
-    }
-
-    private addEnd(): void {
-        this.buf[this.ins] = TypeBytes.RetCar;
-        this.ins++;
-        this.buf[this.ins] = TypeBytes.NewLine;
-        this.ins++;
-    }
-
     public addArr(len: number): Builder {
         let lenToString = len.toString();
         let lenOfLenString = lenToString.length;
@@ -105,5 +72,38 @@ export class Builder {
 
     public out(): [Buffer, number] {
         return [this.buf, this.ins];
+    }
+
+    private checkForRealloc(needed: number): boolean {
+        let newLen = this.ins + needed;
+        if (newLen >= this.capacity) {
+            let buf: Buffer;
+            this.capacity += newLen;
+            try {
+                buf = Buffer.alloc(this.capacity, 0);
+            } catch (_) {
+                return false;
+            }
+
+            this.buf.copy(buf);
+
+            this.buf = buf;
+        }
+
+        return true;
+    }
+
+    private addLength(len: string, lenOfLen: number): void {
+        let i: number;
+        for (i = 0; i < lenOfLen; ++i, ++this.ins) {
+            this.buf[this.ins] = len.charCodeAt(i);
+        }
+    }
+
+    private addEnd(): void {
+        this.buf[this.ins] = TypeBytes.RetCar;
+        this.ins++;
+        this.buf[this.ins] = TypeBytes.NewLine;
+        this.ins++;
     }
 }
