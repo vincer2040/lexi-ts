@@ -3,6 +3,7 @@ export const LexiTypes = {
     bulk: "bulk",
     int: "int",
     simple: "simple",
+    error: "error",
 } as const;
 
 export type LexiType = keyof typeof LexiTypes;

@@ -7,7 +7,8 @@ export const Tokens = {
     newl: "newl",
     bulk: "bulk",
     int: "int",
-    illegal: "illegal"
+    illegal: "illegal",
+    error: "error",
 } as const;
 
 export type TokenT = keyof typeof Tokens;

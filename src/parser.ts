@@ -7,14 +7,24 @@ import type { LexiValue } from "./lexitypes.js";
 export class Parser extends Lexer {
     private cur: Token;
     private peek: Token;
+    private errorArray: Array<string>;
     constructor(input: Buffer) {
         super(input);
         this.nextToken();
         this.nextToken();
+        this.errorArray = [];
     }
 
     public parse(): LexiValue {
         return this.parseStatement();
+    }
+
+    public get errors(): Array<string> {
+        return this.errorArray;
+    }
+
+    public get errorsLen(): number {
+        return this.errorArray.length;
     }
 
     private parseStatement(): LexiValue {
@@ -24,16 +34,13 @@ export class Parser extends Lexer {
                 lexiVal.type = LexiTypes.array;
                 lexiVal.value = [];
                 if (!this.expectPeek(Tokens.len)) {
-                    console.log("handle error");
                     return lexiVal;
                 }
                 let len = parseInt(this.cur.literal);
                 if (!this.expectPeek(Tokens.retcar)) {
-                    console.log("handle retcar error");
                     return lexiVal;
                 }
                 if (!this.expectPeek(Tokens.newl)) {
-                    console.log("handle newl error");
                     return lexiVal;
                 }
 
@@ -49,19 +56,15 @@ export class Parser extends Lexer {
             }
             if (this.cur.literal === "$") {
                 if (!this.expectPeek(Tokens.len)) {
-                    console.log("handle error");
                     return lexiVal;
                 }
                 if (!this.expectPeek(Tokens.retcar)) {
-                    console.log("handle retcar error");
                     return lexiVal;
                 }
                 if (!this.expectPeek(Tokens.newl)) {
-                    console.log("handle newl error");
                     return lexiVal;
                 }
                 if (!this.expectPeek(Tokens.bulk)) {
-                    console.log("handle no bulk error");
                     return lexiVal;
                 }
 
@@ -69,12 +72,10 @@ export class Parser extends Lexer {
                 lexiVal.value = bulkStr;
 
                 if (!this.expectPeek(Tokens.retcar)) {
-                    console.log("handle retcar error");
                     lexiVal.value = null;
                     return lexiVal;
                 }
                 if (!this.expectPeek(Tokens.newl)) {
-                    console.log("handle newl error");
                     lexiVal.value = null;
                     return lexiVal;
                 }
@@ -107,6 +108,15 @@ export class Parser extends Lexer {
             return lexiVal;
         }
 
+        if (this.curTokIs(Tokens.error)) {
+            lexiVal.type = LexiTypes.error;
+            lexiVal.value = this.cur.literal as string;
+            this.expectPeek(Tokens.retcar);
+            this.expectPeek(Tokens.newl);
+            this.nextToken();
+            return lexiVal;
+        }
+
         return lexiVal;
     }
 
@@ -123,7 +133,13 @@ export class Parser extends Lexer {
             this.nextToken();
             return true;
         }
+        this.peekError(type);
         return false;
+    }
+
+    private peekError(type: TokenT): void {
+        let str = `expected peek token to be ${type}, got ${this.peek.type} instead`;
+        this.errors.push(str);
     }
 
     private nextToken() {

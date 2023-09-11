@@ -1,13 +1,24 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, assert } from "vitest";
 import { Parser } from "../src/parser";
 import { LexiTypes, LexiValue } from "../src/lexitypes";
 import { Builder } from "../src/builder";
 
 describe("parser", () => {
+
+    function checkErrors(p: Parser) {
+        if (p.errorsLen !== 0) {
+            p.errors.forEach((x) => {
+                console.log(x);
+            });
+            assert(0 && "parser had erros");
+        }
+    }
+
     it("can parse bulk strings", () => {
         let input = "$7\r\nis cool\r\n";
         let parser = new Parser(Buffer.from(input));
         let lexiVal = parser.parse();
+        checkErrors(parser);
         expect(lexiVal.type).toBe(LexiTypes.bulk);
         expect(lexiVal.value).toBe("is cool");
     });
@@ -16,6 +27,7 @@ describe("parser", () => {
         let input = "*2\r\n$5\r\nvince\r\n$7\r\nis cool\r\n";
         let parser = new Parser(Buffer.from(input));
         let lexiVal = parser.parse();
+        checkErrors(parser);
         expect(lexiVal.type).toBe(LexiTypes.array);
         let arr = lexiVal.value as Array<LexiValue>;
         let i: number, len = arr.length;
@@ -31,6 +43,7 @@ describe("parser", () => {
         let input = "+OK\r\n";
         let parser = new Parser(Buffer.from(input));
         let lexiVal = parser.parse();
+        checkErrors(parser);
         expect(lexiVal.type).toBe(LexiTypes.simple);
         expect(lexiVal.value).toBe("OK");
     });
@@ -44,6 +57,7 @@ describe("parser", () => {
 
         let parser = new Parser(buf);
         let lexiVal = parser.parse();
+        checkErrors(parser);
         expect(lexiVal.type).toBe(LexiTypes.int);
         expect(lexiVal.value).toBe(BigInt(42069));
     });
@@ -69,6 +83,7 @@ describe("parser", () => {
         ];
         let parser = new Parser(buf[0]);
         let lexiVal = parser.parse();
+        checkErrors(parser);
         expect(lexiVal.type).toBe(LexiTypes.array);
         let a = lexiVal.value as Array<LexiValue>;
         a.forEach((x, i) => {
@@ -85,7 +100,15 @@ describe("parser", () => {
                 expect(v[0].value).toBe(expects[i][0]);
                 expect(v[1].value).toBe(expects[i][1]);
             }
-        })
-    })
+        });
+    });
+
+    it("can parse errors", () => {
+        let input = Buffer.from("-error\r\n");
+        let parser = new Parser(input);
+        let lexiVal = parser.parse();
+        expect(lexiVal.type).toBe(LexiTypes.error);
+        expect(lexiVal.value).toBe("error");
+    });
 });
 

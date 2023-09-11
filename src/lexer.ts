@@ -89,6 +89,11 @@ export class Lexer {
                 ret.literal = this.readSimple();
                 ret.type = Tokens.simple;
                 return ret;
+            case 45: // error
+                this.readChar();
+                ret.literal = this.readBulk();
+                ret.type = Tokens.error;
+                return ret;
             case 13:
                 ret.literal = "\r";
                 ret.type = Tokens.retcar;
