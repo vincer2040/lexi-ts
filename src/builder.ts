@@ -74,6 +74,12 @@ export class Builder {
         return [this.buf, this.ins];
     }
 
+    public reset(): Builder {
+        this.buf.fill(0);
+        this.ins = 0;
+        return this;
+    }
+
     private checkForRealloc(needed: number): boolean {
         let newLen = this.ins + needed;
         if (newLen >= this.capacity) {
