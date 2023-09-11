@@ -364,6 +364,11 @@ export default class Lexi {
         return lexiVal.value;
     }
 
+    /**
+     * get all the keys in a cluster
+     * @param {string} name - the name of the cluster
+     * @retrns Promise<LexiVal>
+     */
     public async clusterKeys(name: string): Promise<LexiVal> {
         let buf = this.builder
             .reset()
@@ -378,6 +383,11 @@ export default class Lexi {
         return lexiVal.value;
     }
 
+    /**
+     * get all the values in a cluster
+     * @param {string} name - the name of the cluster
+     * @retrns Promise<LexiVal>
+     */
     public async clusterValues(name: string): Promise<LexiVal> {
         let buf = this.builder
             .reset()
@@ -392,6 +402,11 @@ export default class Lexi {
         return lexiVal.value;
     }
 
+    /**
+     * get all the entries in a cluster
+     * @param {string} name - the name of the cluster
+     * @retrns Promise<LexiVal>
+     */
     public async clusterEntries(name: string): Promise<LexiVal> {
         let buf = this.builder
             .reset()
