@@ -3,11 +3,12 @@
     "version": "0.0.1",
     "description": "",
     "type": "module",
-    "main": "dist/lexi.js",
+    "main": "dist/lexi.cjs",
+    "module": "dist/lexi.js",
     "types": "dist/lexi.d.ts",
     "scripts": {
-        "build": "tsc",
-        "start": "pnpm build && node ./dist/example.js",
+        "build": "tsup src/lexi.ts --format cjs,esm --dts",
+        "lint": "tsc",
         "dev": "vitest",
         "test": "vitest run"
     },
@@ -16,6 +17,7 @@
     "license": "MIT",
     "devDependencies": {
         "@types/node": "^20.2.5",
+        "tsup": "^7.2.0",
         "typescript": "^5.0.4",
         "vitest": "^0.31.1"
     }
