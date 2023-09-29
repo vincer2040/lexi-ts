@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.4
+
+### Patch Changes
+
+- 28fa32b: fix: add tests to npmignore
+
 ## 0.0.3
 
 ### Patch Changes
