@@ -1,4 +1,5 @@
 src
+tests
 .changeset
 .github
 pnpm-lock.yaml
