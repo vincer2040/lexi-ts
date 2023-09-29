@@ -7,10 +7,10 @@ an in-memory data structure database.
 
 ```ts
 
-import Lexi from "lexi";
+import Lexi from "lexi-ts";
 
 async function example() {
-    let client = new Lexi(<addr>, <port>);
+    let client = new Lexi.default(<addr>, <port>);
     await client.connect();
     let setResult = await client.set("foo", "bar"); // "OK"
     let getResult = await client.get("foo"); // "bar"
