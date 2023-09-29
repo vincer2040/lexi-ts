@@ -11,7 +11,7 @@
         "dev": "vitest",
         "test": "vitest run",
         "ci": "pnpm run lint && pnpm run test && pnpm run build",
-        "release": "pnpm run lint && pnpm run test && pnpm run build && changeset publish --access public"
+        "release": "pnpm run lint && pnpm run test && pnpm run build && changeset publish"
     },
     "keywords": [],
     "author": "",
