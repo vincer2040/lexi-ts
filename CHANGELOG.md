@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.3
+
+### Patch Changes
+
+- 45fc76e: fix: only send necessary dist to npm
+
 ## 0.0.2
 
 ### Patch Changes
