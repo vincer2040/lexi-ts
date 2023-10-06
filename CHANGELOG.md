@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.5
+
+### Patch Changes
+
+- 0a33157: added enque and deque methods
+
 ## 0.0.4
 
 ### Patch Changes
