@@ -236,6 +236,63 @@ export default class Lexi {
     }
 
     /**
+     * enque a value
+     * @param {string} value - the string to enque
+     * @returns Promise<LexiVal>
+     */
+    public async enque(value: string): Promise<LexiVal> {
+        let buf = this.builder
+            .reset()
+            .addArr(2)
+            .addBulk("ENQUE")
+            .addBulk(value)
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        return lexiVal.value;
+    }
+
+    /**
+     * enque a value
+     * @param {number} value - the number to enque - must be a whole number
+     * @returns Promise<LexiVal>
+     */
+    public async enqueInt(value: number): Promise<LexiVal> {
+        if (!this.isWholeNumber(value)) {
+            throw new Error("value must be a whole number");
+        }
+        let buf = this.builder
+            .reset()
+            .addArr(2)
+            .addBulk("ENQUE")
+            .add64BitInt(BigInt(value))
+            .out();
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        return lexiVal.value;
+    }
+
+    /**
+     * deque a value
+     * @returns Promise<void>
+     */
+    public async deque(): Promise<LexiVal> {
+        let buf = this.builder
+            .addBulk("DEQUE")
+            .out();
+        await this.send(buf);
+        await this.send(buf);
+        let d = await this.read();
+        let p = new Parser(d);
+        let lexiVal = p.parse();
+        return lexiVal.value;
+    }
+
+    /**
      * create a new cluster
      * @param {string} name - the name of the cluster
      * @returns Promise<LexiVal>
@@ -432,7 +489,7 @@ export default class Lexi {
                 this.socket.write(buf[0], () => {
                     res();
                 });
-            } catch(e) {
+            } catch (e) {
                 rej(e);
             }
         })
