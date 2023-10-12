@@ -103,6 +103,19 @@ describe("parser", () => {
         });
     });
 
+    it("can parse arrays with simple strings", () => {
+        let buf = Buffer.from("*2\r\n+OK\r\n$7\r\nis cool\r\n");
+        let p = new Parser(buf);
+        let val = p.parse();
+        expect(val.type).toBe(LexiTypes.array);
+        let arr = val.value as Array<LexiValue>;
+        expect(arr.length).toBe(2);
+        let one = arr[0] as LexiValue;
+        expect(one.type).toBe(LexiTypes.simple);
+        let two = arr[1];
+        expect(two.type).toBe(LexiTypes.bulk);
+    });
+
     it("can parse errors", () => {
         let input = Buffer.from("-error\r\n");
         let parser = new Parser(input);
