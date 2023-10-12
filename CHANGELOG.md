@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.6
+
+### Patch Changes
+
+- 5364f4c: add multi commands
+
 ## 0.0.5
 
 ### Patch Changes
