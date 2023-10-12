@@ -1,9 +1,9 @@
 import Lexi from "./lexi";
-import { CmdType, Command } from "./cmd";
+import { CmdType, type Command } from "./cmd";
 import { LexiTypes, type LexiVal } from "./lexitypes";
 import type { SetCmd, GetCmd, PushCmd, EnqueCmd, ClusterNewCmd, ClusterSetCmd,
     ClusterGetCmd, ClusterDelCmd, DelCmd, ClusterValuesCmd, ClusterPushCmd,
-    ClusterPopCmd, ClusterKeysCmd, ClusterEntriesCmd
+    ClusterPopCmd, ClusterKeysCmd, ClusterEntriesCmd, ClusterDropCmd
 } from "./cmd";
 import { Parser } from "./parser";
 
@@ -12,13 +12,139 @@ export class Multi {
     private commands: Command[];
     constructor(c: Lexi) {
         this.client = c;
-        this.client.builder.reset();
         this.commands = [];
+    }
+
+    public addPing(): Multi {
+        let cmd = { type: CmdType.Ping, cmd: null };
+        this.commands.push(cmd);
+        return this;
     }
 
     public addSet(key: string, value: string): Multi {
         let setCmd: SetCmd = { key, value: { type: LexiTypes.bulk, value } };
-        let cmd = { type: CmdType.Set, cmd: setCmd };
+        let cmd: Command = { type: CmdType.Set, cmd: setCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addGet(key: string): Multi {
+        let getCmd: GetCmd = { key };
+        let cmd: Command = { type: CmdType.Get, cmd: getCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addDel(key: string): Multi {
+        let delCmd: DelCmd = { key };
+        let cmd: Command = { type: CmdType.Del, cmd: delCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addPush(value: string): Multi {
+        let pushCmd: PushCmd = { value: { type: LexiTypes.bulk, value } };
+        let cmd: Command = { type: CmdType.Push, cmd: pushCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addPop(): Multi {
+        let cmd: Command = { type: CmdType.Pop, cmd: null };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addEnque(value: string): Multi {
+        let pushCmd: EnqueCmd = { value: { type: LexiTypes.bulk, value } };
+        let cmd: Command = { type: CmdType.Enque, cmd: pushCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addDeque(): Multi {
+        let cmd: Command = { type: CmdType.Deque, cmd: null };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addKeys(): Multi {
+        let cmd: Command = { type: CmdType.Keys, cmd: null };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addValues(): Multi {
+        let cmd: Command = { type: CmdType.Values, cmd: null };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addEntries(): Multi {
+        let cmd: Command = { type: CmdType.Entries, cmd: null };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addClusterNew(name: string): Multi {
+        let clusterNewCmd: ClusterNewCmd = { name };
+        let cmd: Command = { type: CmdType.ClusterNew, cmd: clusterNewCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addClusterDrop(name: string): Multi {
+        let clusterDropCmd: ClusterDropCmd = { name };
+        let cmd: Command = { type: CmdType.ClusterDrop, cmd: clusterDropCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addClusterPush(name: string, value: string): Multi {
+        let clusterPushCmd: ClusterPushCmd = { name, value: { type: LexiTypes.bulk, value }};
+        let cmd: Command = { type: CmdType.ClusterPush, cmd: clusterPushCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addClusterSet(name: string, key: string, value: string): Multi {
+        let clusterSetCmd: ClusterSetCmd = { name, key, value: { type: LexiTypes.bulk, value } };
+        let cmd: Command = { type: CmdType.ClusterSet, cmd: clusterSetCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addClusterGet(name: string, key: string): Multi {
+        let clusterGetCmd: ClusterGetCmd = { name, key };
+        let cmd: Command = { type: CmdType.ClusterGet, cmd: clusterGetCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public addClusterDel(name: string, key: string): Multi {
+        let clusterDelCmd: ClusterDelCmd = { name, key };
+        let cmd: Command = { type: CmdType.ClusterDel, cmd: clusterDelCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public clusterKeys(name: string): Multi {
+        let clusterKeysCmd: ClusterKeysCmd = { name };
+        let cmd: Command = { type: CmdType.ClusterKeys, cmd: clusterKeysCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public clusterValues(name: string): Multi {
+        let clusterValuesCmd: ClusterValuesCmd = { name };
+        let cmd: Command = { type: CmdType.ClusterValues, cmd: clusterValuesCmd };
+        this.commands.push(cmd);
+        return this;
+    }
+
+    public clusterEntries(name: string): Multi {
+        let clusterEntriesCmd: ClusterEntriesCmd = { name };
+        let cmd: Command = { type: CmdType.ClusterEntries, cmd: clusterEntriesCmd };
         this.commands.push(cmd);
         return this;
     }
@@ -52,9 +178,10 @@ export class Multi {
                 let setCmd = cmd.cmd as SetCmd;
                 let key = setCmd.key;
                 let val = setCmd.value;
-                this.client.builder.addArr(3);
-                this.client.builder.addBulk("SET");
-                this.client.builder.addBulk(key);
+                this.client.builder
+                    .addArr(3)
+                    .addBulk("SET")
+                    .addBulk(key);
                 if (val.type === LexiTypes.bulk) {
                     let value = val.value as string;
                     this.client.builder.addBulk(value);
@@ -82,8 +209,9 @@ export class Multi {
             case CmdType.Push: {
                 let pushCmd = cmd.cmd as PushCmd;
                 let val = pushCmd.value;
-                this.client.builder.addArr(2);
-                this.client.builder.addBulk("PUSH");
+                this.client.builder
+                    .addArr(2)
+                    .addBulk("PUSH");
                 if (val.type === LexiTypes.bulk) {
                     let value = val.value as string;
                     this.client.builder.addBulk(value);
@@ -98,8 +226,9 @@ export class Multi {
             case CmdType.Enque: {
                 let enqueCmd = cmd.cmd as EnqueCmd;
                 let val = enqueCmd.value;
-                this.client.builder.addArr(2);
-                this.client.builder.addBulk("ENQUE");
+                this.client.builder
+                    .addArr(2)
+                    .addBulk("ENQUE");
                 if (val.type === LexiTypes.bulk) {
                     let value = val.value as string;
                     this.client.builder.addBulk(value);
@@ -141,10 +270,11 @@ export class Multi {
                 let name = clusterSetCmd.name;
                 let key = clusterSetCmd.key;
                 let val = clusterSetCmd.value;
-                this.client.builder.addArr(4);
-                this.client.builder.addBulk("CLUSTER.SET");
-                this.client.builder.addBulk(name);
-                this.client.builder.addBulk(key);
+                this.client.builder
+                    .addArr(4)
+                    .addBulk("CLUSTER.SET")
+                    .addBulk(name)
+                    .addBulk(key);
                 if (val.type === LexiTypes.bulk) {
                     let value = val.value as string;
                     this.client.builder.addBulk(value);

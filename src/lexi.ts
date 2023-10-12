@@ -1,6 +1,7 @@
 import { Builder } from "./builder.js";
 import { DynamicBuffer } from "./dynamicBuffer.js";
 import { LexiVal } from "./lexitypes.js";
+import { Multi } from "./multi.js";
 import { Parser } from "./parser.js";
 import { Socket } from "net";
 
@@ -8,7 +9,7 @@ export default class Lexi {
     private addr: string
     private port: number;
     private socket: Socket;
-    private builder: Builder;
+    public builder: Builder;
 
     constructor(addr: string, port: number) {
         this.addr = addr;
@@ -478,7 +479,11 @@ export default class Lexi {
         return lexiVal.value;
     }
 
-    private send(buf: [Buffer, number]): Promise<void> {
+    public multi(): Multi {
+        return new Multi(this);
+    }
+
+    public send(buf: [Buffer, number]): Promise<void> {
         return new Promise((res, rej) => {
             if (!this.socket.writable) {
                 rej("socket is not writable");
@@ -495,7 +500,7 @@ export default class Lexi {
         })
     }
 
-    private read(): Promise<Buffer> {
+    public read(): Promise<Buffer> {
         let buf = new DynamicBuffer();
         return new Promise((res, rej) => {
             try {
