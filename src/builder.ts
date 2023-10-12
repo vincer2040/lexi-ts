@@ -4,6 +4,7 @@ const TypeBytes = {
     RetCar: "\r".charCodeAt(0),
     NewLine: "\n".charCodeAt(0),
     Int: ":".charCodeAt(0),
+    simple: "+".charCodeAt(0),
 } as const;
 
 export class Builder {
@@ -16,6 +17,23 @@ export class Builder {
         this.capacity = 32;
         this.buf = Buffer.alloc(this.capacity, 0);
         this.ins = 0;
+    }
+
+    public addPing(): Builder {
+        let lenToAppend = 7;
+        this.checkForRealloc(lenToAppend);
+        this.buf[this.ins] = TypeBytes.simple;
+        this.ins++;
+        this.buf[this.ins] = "P".charCodeAt(0);
+        this.ins++;
+        this.buf[this.ins] = "I".charCodeAt(0);
+        this.ins++;
+        this.buf[this.ins] = "N".charCodeAt(0);
+        this.ins++;
+        this.buf[this.ins] = "G".charCodeAt(0);
+        this.ins++;
+        this.addEnd();
+        return this;
     }
 
     public addArr(len: number): Builder {
