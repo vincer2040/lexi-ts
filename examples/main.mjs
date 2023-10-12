@@ -6,7 +6,8 @@ await client.connect();
 
 let x = client.multi()
     .addSet("vince", "is cool")
-    .addSet("yes", "no");
+    .addGet("vince")
+    .addEntries();
 
 let v = await x.done();
 
