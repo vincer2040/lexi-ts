@@ -89,6 +89,17 @@ export class Parser extends Lexer {
         if (this.curTokIs(Tokens.simple)) {
             lexiVal.value = this.cur.literal as string;
             lexiVal.type = LexiTypes.simple;
+            if (!this.expectPeek(Tokens.retcar)) {
+                lexiVal.value = null;
+                return lexiVal;
+            }
+            if (!this.expectPeek(Tokens.newl)) {
+                lexiVal.value = null;
+                return lexiVal;
+            }
+
+            this.nextToken();
+
             return lexiVal;
         }
 
