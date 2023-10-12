@@ -4,3 +4,4 @@ tests
 .github
 pnpm-lock.yaml
 tsconfig.json
+examples
