@@ -1,160 +1,144 @@
-import { Lexer } from "./lexer.js";
-import { LexiTypes } from "./lexitypes.js";
-import { Tokens } from "./token.js";
-import type { Token, TokenT } from "./token.js";
-import type { LexiValue } from "./lexitypes.js";
+import { DynamicBuffer } from "./dynamicBuffer";
+import { Type, type LexiData } from "./lexiData";
+import { NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, STRING_TYPE_BYTE, isDigit } from "./util";
 
-export class Parser extends Lexer {
-    private cur: Token;
-    private peek: Token;
-    private errorArray: Array<string>;
-    constructor(input: Buffer) {
-        super(input);
-        this.nextToken();
-        this.nextToken();
-        this.errorArray = [];
+type SimpleLookup = {
+    str: string,
+    type: Type,
+}
+
+const SIMPLE_LOOKUPS: SimpleLookup[] = [
+    { str: "OK", type: Type.Ok },
+    { str: "NONE", type: Type.None },
+];
+
+const SIMPLE_LOOKUPS_LEN = SIMPLE_LOOKUPS.length;
+
+export class Parser {
+    private input: Buffer;
+    private pos: number;
+    private ch: number;
+
+    constructor(input?: Buffer) {
+        if (input) {
+            this.input = input;
+        }
+        this.pos = 0;
+        this.ch = 0;
+        this.readChar();
     }
 
-    public parse(): LexiValue {
-        return this.parseStatement();
+    public parse(): LexiData {
+        switch (this.ch) {
+            case STRING_TYPE_BYTE:
+                return this.parseString();
+            case SIMPLE_TYPE_BYTE:
+                return this.parseSimple();
+            default:
+                break;
+        }
+        return { type: Type.Unkown, data: null };
     }
 
-    public get errors(): Array<string> {
-        return this.errorArray;
+    public reset(input: Buffer): void {
+        this.input = input;
+        this.ch = 0;
+        this.pos = 0;
+        this.readChar();
     }
 
-    public get errorsLen(): number {
-        return this.errorArray.length;
+    private parseString(): LexiData {
+        this.readChar();
+        const length = this.parseLength();
+        if (!this.curCharIs(RET_CAR)) {
+            return { type: Type.Unkown, data: null };
+        }
+        if (!this.expectPeek(NEW_LINE)) {
+            return { type: Type.Unkown, data: null };
+        }
+        this.readChar();
+
+        let string = Buffer.alloc(length);
+        for (let i = 0; i < length; ++i) {
+            string[i] = this.ch;
+            this.readChar();
+        }
+        if (!this.curCharIs(RET_CAR)) {
+            return { type: Type.Unkown, data: null };
+        }
+        if (!this.expectPeek(NEW_LINE)) {
+            return { type: Type.Unkown, data: null };
+        }
+        this.readChar();
+        return { type: Type.String, data: string.toString() };
     }
 
-    private parseStatement(): LexiValue {
-        let lexiVal: LexiValue = { type: LexiTypes.bulk, value: "" };
-        if (this.curTokIs(Tokens.type)) {
-            if (this.cur.literal === "*") {
-                lexiVal.type = LexiTypes.array;
-                lexiVal.value = [];
-                if (!this.expectPeek(Tokens.len)) {
-                    return lexiVal;
-                }
-                let len = parseInt(this.cur.literal);
-                if (!this.expectPeek(Tokens.retcar)) {
-                    return lexiVal;
-                }
-                if (!this.expectPeek(Tokens.newl)) {
-                    return lexiVal;
-                }
+    private parseSimple(): LexiData {
+        this.readChar();
+        let buf = new DynamicBuffer();
+        while (this.ch != 0 && this.ch != RET_CAR) {
+            buf.pushChar(this.ch);
+            this.readChar();
+        }
+        if (!this.curCharIs(RET_CAR)) {
+            return { type: Type.Unkown, data: null };
+        }
+        if (!this.expectPeek(NEW_LINE)) {
+            return { type: Type.Unkown, data: null };
+        }
+        let type = this.lookupSimple(buf.out().toString());
+        return { type, data: null };
+    }
 
-                this.nextToken();
+    private parseLength(): number {
+        let res = 0;
+        while (isDigit(this.ch)) {
+            res = (res * 10) + (this.ch - 48);
+            this.readChar();
+        }
+        return res;
+    }
 
-                let i: number;
-
-                for (i = 0; i < len; ++i) {
-                    lexiVal.value.push(this.parseStatement());
-                }
-
-                return lexiVal;
-            }
-            if (this.cur.literal === "$") {
-                if (!this.expectPeek(Tokens.len)) {
-                    return lexiVal;
-                }
-                if (!this.expectPeek(Tokens.retcar)) {
-                    return lexiVal;
-                }
-                if (!this.expectPeek(Tokens.newl)) {
-                    return lexiVal;
-                }
-                if (!this.expectPeek(Tokens.bulk)) {
-                    return lexiVal;
-                }
-
-                let bulkStr = this.cur.literal;
-                lexiVal.value = bulkStr;
-
-                if (!this.expectPeek(Tokens.retcar)) {
-                    lexiVal.value = null;
-                    return lexiVal;
-                }
-                if (!this.expectPeek(Tokens.newl)) {
-                    lexiVal.value = null;
-                    return lexiVal;
-                }
-
-                this.nextToken();
-
-                return lexiVal;
+    private lookupSimple(str: string): Type {
+        for (let i = 0; i < SIMPLE_LOOKUPS_LEN; ++i) {
+            const simpleLookup = SIMPLE_LOOKUPS[i];
+            if (simpleLookup.str.localeCompare(str) === 0) {
+                return simpleLookup.type;
             }
         }
-
-        if (this.curTokIs(Tokens.simple)) {
-            lexiVal.value = this.cur.literal as string;
-            lexiVal.type = LexiTypes.simple;
-            if (!this.expectPeek(Tokens.retcar)) {
-                lexiVal.value = null;
-                return lexiVal;
-            }
-            if (!this.expectPeek(Tokens.newl)) {
-                lexiVal.value = null;
-                return lexiVal;
-            }
-
-            this.nextToken();
-
-            return lexiVal;
-        }
-
-        if (this.curTokIs(Tokens.int)) {
-            let val = BigInt(0);
-            let i: number;
-            let b = this.cur.literal as Buffer;
-            let s = BigInt(8);
-            for (i = 0; i < 8; ++i) {
-                val = (val << s) | BigInt(b[i]);
-            }
-            lexiVal.value = val;
-            lexiVal.type = LexiTypes.int;
-            this.expectPeek(Tokens.retcar);
-            this.expectPeek(Tokens.newl);
-            this.nextToken();
-            return lexiVal;
-        }
-
-        if (this.curTokIs(Tokens.error)) {
-            lexiVal.type = LexiTypes.error;
-            lexiVal.value = this.cur.literal as string;
-            this.expectPeek(Tokens.retcar);
-            this.expectPeek(Tokens.newl);
-            this.nextToken();
-            return lexiVal;
-        }
-
-        return lexiVal;
+        return Type.Unkown;
     }
 
-    private curTokIs(type: TokenT): boolean {
-        return this.cur.type === type;
+    private peekChar(): number {
+        if (this.pos >= this.input.length) {
+            return 0;
+        }
+        return this.input[this.pos];
     }
 
-    private peekTokIs(type: TokenT): boolean {
-        return this.peek.type === type;
+    private curCharIs(char: number): boolean {
+        return this.ch === char;
     }
 
-    private expectPeek(type: TokenT): boolean {
-        if (this.peekTokIs(type)) {
-            this.nextToken();
+    private peekCharIs(char: number): boolean {
+        return this.peekChar() === char;
+    }
+
+    private expectPeek(char: number): boolean {
+        if (this.peekCharIs(char)) {
+            this.readChar();
             return true;
         }
-        this.peekError(type);
+
         return false;
     }
 
-    private peekError(type: TokenT): void {
-        let str = `expected peek token to be ${type}, got ${this.peek.type} instead`;
-        this.errors.push(str);
-    }
-
-    private nextToken() {
-        this.cur = this.peek;
-        this.peek = this.lnextToken();
+    private readChar(): void {
+        if (this.pos >= this.input.length) {
+            this.ch = 0;
+            return;
+        }
+        this.ch = this.input[this.pos];
+        this.pos++;
     }
 }

@@ -1,524 +1,113 @@
-import { Builder } from "./builder.js";
-import { DynamicBuffer } from "./dynamicBuffer.js";
-import { LexiVal } from "./lexitypes.js";
-import { Multi } from "./multi.js";
-import { Parser } from "./parser.js";
-import { Socket } from "net";
+import { Socket, createConnection } from "net";
+import { Builder } from "./builder";
+import { DynamicBuffer } from "./dynamicBuffer";
+import { Parser } from "./parser";
+import { extractData } from "./lexiData";
 
-export default class Lexi {
-    private addr: string
+export class LexiClient {
+    private builder: Builder;
+    private socket: Socket | undefined;
+    private connected: boolean;
+    private address: string;
     private port: number;
-    private socket: Socket;
-    public builder: Builder;
+    private readBuf: DynamicBuffer;
+    private parser: Parser;
 
-    constructor(addr: string, port: number) {
-        this.addr = addr;
-        this.port = port;
-        this.socket = new Socket();
+    constructor(address: string, port: number) {
         this.builder = new Builder();
+        this.connected = false;
+        this.address = address;
+        this.port = port;
+        this.socket = undefined;
+        this.readBuf = new DynamicBuffer();
+        this.parser = new Parser();
     }
 
-    /**
-     * create a connection to the database
-     * @throws error if socket fails to connect
-     * @returns Promise<void>
-     */
-    public connect(): Promise<void> {
+    public connect(): void {
+        this.socket = createConnection({ localAddress: this.address, port: this.port });
+        this.connected = true;
+    }
+
+    public isConnected(): boolean {
+        return this.connected;
+    }
+
+    public async set(key: string, value: string): Promise<string | null> {
+        const buf = this.builder
+            .reset()
+            .addArray(3)
+            .addString("SET")
+            .addString(key)
+            .addString(value)
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
+    public async get(key: string): Promise<string | null> {
+        const buf = this.builder
+            .reset()
+            .addArray(2)
+            .addString("GET")
+            .addString(key)
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
+    public async del(key: string): Promise<string | null> {
+        const buf = this.builder
+            .reset()
+            .addArray(2)
+            .addString("DEL")
+            .addString(key)
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
+    private parse(buf: Buffer): string | null {
+        this.parser.reset(buf);
+        const parsed = this.parser.parse();
+        const data = extractData(parsed);
+        return data;
+    }
+
+    private read(): Promise<Buffer> {
+        if (!this.socket.readable) {
+            throw new Error("socket not readable");
+        }
+        this.readBuf.reset();
         return new Promise((res, rej) => {
             try {
-                this.socket.connect(this.port, this.addr, () => {
-                    res();
-                });
-            } catch (e) {
-                rej(e);
-            }
-        })
-    }
-
-    /**
-     * close the connection
-     * @throws error if node fails to destory socket
-     * @returns void
-     */
-    public close(): void {
-        this.socket.destroy();
-    }
-
-    /**
-     * set a key and value
-     * @param {string} key - the key to set
-     * @param {string} value - the value to set the key to
-     * @returns Promise<LexiVal>
-     */
-    public async set(key: string, value: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(3)
-            .addBulk("SET")
-            .addBulk(key)
-            .addBulk(value)
-            .out();
-
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * set a key and 64 bit integer value
-     * @param {string} key - the key to be set
-     * @param {number} value - the number to set - must be a whole number
-     * @returns Promise<LexiVal>
-     */
-    public async setInt(key: string, value: number): Promise<LexiVal> {
-        if (!this.isWholeNumber(value)) {
-            throw new Error("invalid integer, must be a whole number");
-        }
-        let buf = this.builder
-            .reset()
-            .addArr(3)
-            .addBulk("SET")
-            .addBulk(key)
-            .add64BitInt(BigInt(value))
-            .out();
-
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get a value
-     * @param {string} key - the key to get
-     * @returns Promise<LexiVal>
-     */
-    public async get(key: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("GET")
-            .addBulk(key)
-            .out();
-
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * delete a value
-     * @param {string} key - the key to delete
-     * @returns Promise<LexiVal>
-     */
-    public async del(key: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("DEL")
-            .addBulk(key)
-            .out();
-
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get all the keys
-     * @returns Promise<LexiVal>
-     */
-    public async keys(): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addBulk("KEYS")
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get all the values
-     * @returns Promise<LexiVal>
-     */
-    public async values(): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addBulk("VALUES")
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get all the entries
-     * @returns Promise<LexiVal>
-     */
-    public async entries(): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addBulk("ENTRIES")
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let parser = new Parser(d);
-        let lexiVal = parser.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * push a value
-     * @param {string} value - the value to push
-     * @returns Promise<LexiVal>
-     */
-    public async push(value: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("PUSH")
-            .addBulk(value)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * push an integeer
-     * @param {number} value - the integer to push - must be a whole number
-     * @returns Promise<LexiVal>
-     */
-    public async pushInt(value: number): Promise<LexiVal> {
-        if (!this.isWholeNumber(value)) {
-            throw new Error("value must be a whole number");
-        }
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("PUSH")
-            .add64BitInt(BigInt(value))
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * pop a value
-     * @returns Promise<LexiVal>
-     */
-    public async pop(): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addBulk("POP")
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * enque a value
-     * @param {string} value - the string to enque
-     * @returns Promise<LexiVal>
-     */
-    public async enque(value: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("ENQUE")
-            .addBulk(value)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * enque a value
-     * @param {number} value - the number to enque - must be a whole number
-     * @returns Promise<LexiVal>
-     */
-    public async enqueInt(value: number): Promise<LexiVal> {
-        if (!this.isWholeNumber(value)) {
-            throw new Error("value must be a whole number");
-        }
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("ENQUE")
-            .add64BitInt(BigInt(value))
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * deque a value
-     * @returns Promise<void>
-     */
-    public async deque(): Promise<LexiVal> {
-        let buf = this.builder
-            .addBulk("DEQUE")
-            .out();
-        await this.send(buf);
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * create a new cluster
-     * @param {string} name - the name of the cluster
-     * @returns Promise<LexiVal>
-     */
-    public async clusterNew(name: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("CLUSTER.NEW")
-            .addBulk(name)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * set a value in a cluster
-     * @param {string} name - the name of the cluster
-     * @param {string} key - the key to set
-     * @param {string} value - the value to set
-     * @returns Promise<LexiVal>
-     */
-    public async clusterSet(name: string, key: string, value: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(4)
-            .addBulk("CLUSTER.SET")
-            .addBulk(name)
-            .addBulk(key)
-            .addBulk(value)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * set an integer in a cluster
-     * @param {string} name - the name of the cluster
-     * @param {string} key - the key to set
-     * @param {number} value - the integer to set - must be a whole number
-     * @returns Promise<LexiVal>
-     */
-    public async clusterSetInt(name: string, key: string, value: number): Promise<LexiVal> {
-        if (!this.isWholeNumber(value)) {
-            throw new Error("value must be a whole number");
-        }
-        let buf = this.builder
-            .reset()
-            .addArr(4)
-            .addBulk("CLUSTER.SET")
-            .addBulk(name)
-            .addBulk(key)
-            .add64BitInt(BigInt(value))
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get a value from a cluster
-     * @param {string} name - the name of the cluster
-     * @param {string} key - the key to get
-     * @returns Promise<LexiVal>
-     */
-    public async clusterGet(name: string, key: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(3)
-            .addBulk("CLUSTER.GET")
-            .addBulk(name)
-            .addBulk(key)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * delete a value from a cluster
-     * @param {string} name - the name of the cluster
-     * @param {string} key - the key to delete
-     * @returns Promise<LexiVal>
-     */
-    public async clusterDel(name: string, key: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(3)
-            .addBulk("CLUSTER.DEL")
-            .addBulk(name)
-            .addBulk(key)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * drop a cluster - this deletes the while cluster
-     * @param {string} name - the name of the cluster
-     * @returns Promise<LexiVal>
-     */
-    public async clusterDrop(name: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("CLUSTER.DROP")
-            .addBulk(name)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get all the keys in a cluster
-     * @param {string} name - the name of the cluster
-     * @retrns Promise<LexiVal>
-     */
-    public async clusterKeys(name: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("CLUSTER.KEYS")
-            .addBulk(name)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get all the values in a cluster
-     * @param {string} name - the name of the cluster
-     * @retrns Promise<LexiVal>
-     */
-    public async clusterValues(name: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("CLUSTER.VALUES")
-            .addBulk(name)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    /**
-     * get all the entries in a cluster
-     * @param {string} name - the name of the cluster
-     * @retrns Promise<LexiVal>
-     */
-    public async clusterEntries(name: string): Promise<LexiVal> {
-        let buf = this.builder
-            .reset()
-            .addArr(2)
-            .addBulk("CLUSTER.ENTRIES")
-            .addBulk(name)
-            .out();
-        await this.send(buf);
-        let d = await this.read();
-        let p = new Parser(d);
-        let lexiVal = p.parse();
-        return lexiVal.value;
-    }
-
-    public multi(): Multi {
-        return new Multi(this);
-    }
-
-    public send(buf: [Buffer, number]): Promise<void> {
-        return new Promise((res, rej) => {
-            if (!this.socket.writable) {
-                rej("socket is not writable");
-            }
-            try {
-                // why is there no socket.write with a length? what
-                // a messy language
-                this.socket.write(buf[0], () => {
-                    res();
-                });
-            } catch (e) {
-                rej(e);
-            }
-        })
-    }
-
-    public read(): Promise<Buffer> {
-        let buf = new DynamicBuffer();
-        return new Promise((res, rej) => {
-            try {
-                this.socket.on('readable', () => {
-                    let chunk: Buffer;
-                    while ((chunk = this.socket.read()) !== null) {
-                        buf.append(chunk);
-                    }
-                    this.socket.removeAllListeners();
-                    res(buf.out());
-                })
+                let chunk: Buffer;
+                while ((chunk = this.socket.read()) !== null) {
+                    this.readBuf.append(chunk);
+                }
+                this.socket.removeAllListeners();
+                res(this.readBuf.out());
             } catch (e) {
                 rej(e);
             }
         });
     }
 
-    private isWholeNumber(int: number): boolean {
-        return Math.round(int) === int;
+    private write(buf: Buffer): Promise<void> {
+        if (!this.socket.writable) {
+            throw new Error("socket is not writable");
+        }
+        return new Promise((res, rej) => {
+            try {
+                // I really hate that there is not write method with a length to write
+                this.socket.write(buf, () => {
+                    res();
+                });
+            } catch (e) {
+                rej(e);
+            }
+        });
     }
 }

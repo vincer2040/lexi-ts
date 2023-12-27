@@ -1,47 +1,61 @@
-const INITIAL_CAP = 32;
+const DYANMIC_BUFFER_INITIAL_CAPACITY = 32
 
 export class DynamicBuffer {
-    private buf: Buffer;
-    private ins: number;
+    private buffer: Buffer;
+    private len: number;
     private cap: number;
-
-    constructor(initialCap?: number) {
-        if (initialCap) {
-            this.cap = initialCap;
+    constructor(capacity?: number) {
+        this.len = 0;
+        if (capacity) {
+            this.cap = capacity
         } else {
-            this.cap = INITIAL_CAP;
+            this.cap = DYANMIC_BUFFER_INITIAL_CAPACITY;
         }
-        this.buf = Buffer.alloc(this.cap, 0);
-        this.ins = 0;
+        this.buffer = Buffer.alloc(this.cap);
     }
 
-    public append(src: Buffer) {
-        let srcLen = src.length;
-        let needed = this.ins + srcLen;
-        if (needed > this.cap) {
-            this.reallocBuf(needed);
+    public pushChar(char: number): void {
+        if (this.len >= this.cap) {
+            this.reallocBuffer(1);
         }
-        src.copy(this.buf, this.ins);
-        this.ins += srcLen;
+        this.buffer[this.len] = char;
+        this.len++;
+    }
+
+    public append(buf: Buffer): void {
+        let len = buf.length;
+        const needed = this.len + len;
+        if (needed >= this.cap) {
+            this.reallocBuffer(len);
+        }
+        this.buffer.copy(buf, this.len);
+        this.len += len;
+    }
+
+    public pushString(string: string): void {
+        const stringLength = string.length;
+        const needed = this.len + stringLength;
+        if (needed >= this.cap) {
+            this.reallocBuffer(stringLength);
+        }
+        this.buffer.write(string, this.len);
+        this.len += stringLength;
     }
 
     public out(): Buffer {
-        return this.buf;
+        return this.buffer;
     }
 
-    private reallocBuf(needed: number): boolean {
-        let buf: Buffer;
-        this.cap += needed;
-        try {
-            buf = Buffer.alloc(this.cap, 0);
-        } catch (_) {
-            return false;
-        }
+    public reset(): void {
+        this.buffer.fill(0);
+        this.len = 0;
+    }
 
-        this.buf.copy(buf);
-
-        this.buf = buf;
-
-        return true;
+    private reallocBuffer(needed: number): void {
+        const capacity = (this.cap * 2) + needed;
+        const newBuffer = Buffer.alloc(capacity);
+        this.buffer.copy(newBuffer);
+        this.cap = capacity;
+        this.buffer = newBuffer;
     }
 }
