@@ -1,9 +1,5 @@
 import { DynamicBuffer } from "./dynamicBuffer";
-
-const ARRAY_TYPE_BYTE = 42; // *
-const STRING_TYPE_BYTE = 36; // $
-const RET_CAR = 13 // \r
-const NEW_LINE = 10 // \n
+import { ARRAY_TYPE_BYTE, STRING_TYPE_BYTE, RET_CAR, NEW_LINE } from "./util";
 
 export class Builder {
     private buffer: DynamicBuffer;
