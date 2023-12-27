@@ -19,8 +19,10 @@ export class Parser {
     private pos: number;
     private ch: number;
 
-    constructor(input: Buffer) {
-        this.input = input;
+    constructor(input?: Buffer) {
+        if (input) {
+            this.input = input;
+        }
         this.pos = 0;
         this.ch = 0;
         this.readChar();
@@ -36,6 +38,13 @@ export class Parser {
                 break;
         }
         return { type: Type.Unkown, data: null };
+    }
+
+    public reset(input: Buffer): void {
+        this.input = input;
+        this.ch = 0;
+        this.pos = 0;
+        this.readChar();
     }
 
     private parseString(): LexiData {

@@ -22,13 +22,14 @@ export class DynamicBuffer {
         this.len++;
     }
 
-    public out(): Buffer {
-        return this.buffer;
-    }
-
-    public reset(): void {
-        this.buffer.fill(0);
-        this.len = 0;
+    public append(buf: Buffer): void {
+        let len = buf.length;
+        const needed = this.len + len;
+        if (needed >= this.cap) {
+            this.reallocBuffer(len);
+        }
+        this.buffer.copy(buf, this.len);
+        this.len += len;
     }
 
     public pushString(string: string): void {
@@ -39,6 +40,15 @@ export class DynamicBuffer {
         }
         this.buffer.write(string, this.len);
         this.len += stringLength;
+    }
+
+    public out(): Buffer {
+        return this.buffer;
+    }
+
+    public reset(): void {
+        this.buffer.fill(0);
+        this.len = 0;
     }
 
     private reallocBuffer(needed: number): void {
