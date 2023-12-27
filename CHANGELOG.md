@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.7
+
+### Patch Changes
+
+- 62a18f7: better code
+
 ## 0.0.6
 
 ### Patch Changes
