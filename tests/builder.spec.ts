@@ -26,4 +26,16 @@ describe("builder", () => {
             expect(ch).toBe(buffer[i]);
         }
     });
+
+    it("can build integers", () => {
+        const buffer = new Builder()
+            .addInt(1337)
+            .out();
+        const exp = [58, 0, 0, 0, 0, 0, 0, 5, 57, 13, 10];
+        for (let i = 0; i < exp.length; ++i) {
+            const ch = exp[i];
+            expect(ch).toBe(buffer[i]);
+        }
+
+    });
 });
