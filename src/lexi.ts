@@ -24,7 +24,7 @@ export class LexiClient {
     }
 
     public connect(): void {
-        this.socket = createConnection({ localAddress: this.address, port: this.port });
+        this.socket = createConnection(this.port, this.address);
         this.connected = true;
     }
 
@@ -67,6 +67,10 @@ export class LexiClient {
         await this.write(buf);
         const read = await this.read();
         return this.parse(read);
+    }
+
+    public close() {
+        this.socket.destroy();
     }
 
     private parse(buf: Buffer): LexiDataT {
