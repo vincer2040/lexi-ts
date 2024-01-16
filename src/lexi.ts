@@ -81,17 +81,17 @@ export class LexiClient {
     }
 
     private read(): Promise<Buffer> {
-        if (!this.socket.readable) {
-            throw new Error("socket not readable");
-        }
         this.readBuf.reset();
         return new Promise((res, rej) => {
             try {
-                let chunk: Buffer;
-                while ((chunk = this.socket.read()) !== null) {
-                    this.readBuf.append(chunk);
-                }
-                res(this.readBuf.out());
+                this.socket.on('readable', () => {
+                    let chunk: Buffer;
+                    while ((chunk = this.socket.read()) !== null) {
+                        this.readBuf.append(chunk);
+                    }
+                    this.socket.removeAllListeners();
+                    res(this.readBuf.out());
+                })
             } catch (e) {
                 rej(e);
             }
@@ -99,9 +99,6 @@ export class LexiClient {
     }
 
     private write(buf: Buffer): Promise<void> {
-        if (!this.socket.writable) {
-            throw new Error("socket is not writable");
-        }
         return new Promise((res, rej) => {
             try {
                 // I really hate that there is not write method with a length to write
