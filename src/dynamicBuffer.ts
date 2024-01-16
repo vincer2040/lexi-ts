@@ -42,15 +42,6 @@ export class DynamicBuffer {
         this.len += stringLength;
     }
 
-    public add64BitInteger(int: number): void {
-        let needed = this.len + 8;
-        if (needed >= this.cap) {
-            this.reallocBuffer(needed);
-        }
-        this.buffer.writeBigInt64BE(BigInt(int), this.len);
-        this.len += 8;
-    }
-
     public out(): Buffer {
         return this.buffer;
     }
