@@ -1,6 +1,6 @@
 import { DynamicBuffer } from "./dynamicBuffer";
 import { Type, type LexiData } from "./lexiData";
-import { INT_TYPE_BYTE, NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, STRING_TYPE_BYTE, isDigit, twosComplementBigInt } from "./util";
+import { INT_TYPE_BYTE, NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, STRING_TYPE_BYTE, isDigit } from "./util";
 
 type SimpleLookup = {
     str: string,
