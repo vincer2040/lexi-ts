@@ -12,6 +12,8 @@ type IntTest = {
     exp: number,
 };
 
+type DoubleTest = IntTest;
+
 describe("parser", () => {
     it("can parse strings", () => {
         const input = Buffer.from("$3\r\nfoo\r\n");
@@ -48,6 +50,21 @@ describe("parser", () => {
             expect(data.type).toBe(Type.Int);
             const int = data.data as number;
             expect(int).toBe(test.exp);
+        }
+    });
+
+    it("can parse doubles", () => {
+        const tests: DoubleTest[] = [
+            { input: Buffer.from(",1337.1337\r\n"), exp: 1337.1337 },
+            { input: Buffer.from(",1337\r\n"), exp: 1337 },
+            { input: Buffer.from(",-1337\r\n"), exp: -1337 },
+        ];
+        for (const test of tests) {
+            const parser = new Parser(test.input);
+            const data = parser.parse();
+            expect(data.type).toBe(Type.Double);
+            const dbl = data.data as number;
+            expect(dbl).toBe(test.exp);
         }
     });
 });
