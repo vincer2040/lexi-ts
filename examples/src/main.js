@@ -14,6 +14,18 @@ async function main() {
     const delRes = await client.del("foo");
     console.log(delRes);
 
+    const pushRes = await client.push("foo");
+    console.log(pushRes);
+
+    const popRes = await client.pop();
+    console.log(popRes);
+
+    const enqueRes = await client.enque("foo");
+    console.log(enqueRes);
+
+    const dequeRes = await client.deque();
+    console.log(dequeRes);
+
     client.close();
 }
 

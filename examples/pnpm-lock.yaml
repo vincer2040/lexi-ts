@@ -6,11 +6,11 @@ settings:
 
 dependencies:
   lexi-ts:
-    specifier: ^0.0.11
-    version: 0.0.11
+    specifier: ^0.0.13
+    version: 0.0.13
 
 packages:
 
-  /lexi-ts@0.0.11:
-    resolution: {integrity: sha512-kEoTHKR0GPHcWBOHg+XSQNaHc7VhGVmk1r8L34NqnU7QAZ1S0oJaxu5bw/sKmbel/Nd7JXdTxi0k180Nt/AwIg==}
+  /lexi-ts@0.0.13:
+    resolution: {integrity: sha512-ve0r2hB9SXUMihmNfwlBqx/7q1UR4KQKyHKqbGj/MxIlhpzBabDpszilqNcrLT3dezuRvtTAK9BdwXPMyDD4BA==}
     dev: false
