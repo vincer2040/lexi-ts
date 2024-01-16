@@ -119,7 +119,7 @@ export class LexiClient {
     public async deque(): Promise<LexiDataT> {
         const buf = this.builder
             .reset()
-            .addString("Deque")
+            .addString("DEQUE")
             .out();
         await this.write(buf);
         const read = await this.read();
