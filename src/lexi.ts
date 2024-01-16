@@ -32,6 +32,19 @@ export class LexiClient {
         return this.connected;
     }
 
+    public async authenticate(username: string, password: string): Promise<LexiDataT> {
+        const buf = this.builder
+            .reset()
+            .addArray(3)
+            .addString("AUTH")
+            .addString(username)
+            .addString(password)
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
     public async set(key: string, value: string): Promise<LexiDataT> {
         const buf = this.builder
             .reset()
