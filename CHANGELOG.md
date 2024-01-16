@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.13
+
+### Patch Changes
+
+- 1e7d9b8: fix deque command
+
 ## 0.0.12
 
 ### Patch Changes
