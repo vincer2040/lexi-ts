@@ -82,6 +82,50 @@ export class LexiClient {
         return this.parse(read);
     }
 
+    public async push(value: string): Promise<LexiDataT> {
+        const buf = this.builder
+            .reset()
+            .addArray(2)
+            .addString("PUSH")
+            .addString(value)
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
+    public async pop(): Promise<LexiDataT> {
+        const buf = this.builder
+            .reset()
+            .addString("POP")
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
+    public async enque(value: string): Promise<LexiDataT> {
+        const buf = this.builder
+            .reset()
+            .addArray(2)
+            .addString("ENQUE")
+            .addString(value)
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
+    public async deque(): Promise<LexiDataT> {
+        const buf = this.builder
+            .reset()
+            .addString("Deque")
+            .out();
+        await this.write(buf);
+        const read = await this.read();
+        return this.parse(read);
+    }
+
     public close() {
         this.socket.destroy();
     }
