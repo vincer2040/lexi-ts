@@ -1,5 +1,5 @@
 import { DynamicBuffer } from "./dynamicBuffer";
-import { ARRAY_TYPE_BYTE, STRING_TYPE_BYTE, RET_CAR, NEW_LINE, INT_TYPE_BYTE } from "./util";
+import { ARRAY_TYPE_BYTE, STRING_TYPE_BYTE, RET_CAR, NEW_LINE, INT_TYPE_BYTE, DOUBLE_TYPE_BYTE } from "./util";
 
 export class Builder {
     private buffer: DynamicBuffer;
@@ -30,6 +30,14 @@ export class Builder {
         }
         this.buffer.pushChar(INT_TYPE_BYTE);
         const s = int.toString();
+        this.buffer.pushString(s);
+        this.addEnd();
+        return this;
+    }
+
+    public addDouble(dbl: number): Builder {
+        this.buffer.pushChar(DOUBLE_TYPE_BYTE);
+        const s = dbl.toString();
         this.buffer.pushString(s);
         this.addEnd();
         return this;
