@@ -28,7 +28,7 @@ export class DynamicBuffer {
         if (needed >= this.cap) {
             this.reallocBuffer(len);
         }
-        this.buffer.copy(buf, this.len);
+        buf.copy(this.buffer, this.len);
         this.len += len;
     }
 
