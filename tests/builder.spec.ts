@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { Builder } from "../src/builder";
 
+type IntTest = {
+    num: number,
+    exp: string,
+};
+
 describe("builder", () => {
     it("can build strings", () => {
         const buffer = new Builder()
@@ -28,14 +33,18 @@ describe("builder", () => {
     });
 
     it("can build integers", () => {
-        const buffer = new Builder()
-            .addInt(1337)
-            .out();
-        const exp = [58, 0, 0, 0, 0, 0, 0, 5, 57, 13, 10];
-        for (let i = 0; i < exp.length; ++i) {
-            const ch = exp[i];
-            expect(ch).toBe(buffer[i]);
+        const tests: IntTest[] = [
+            { num: 1337, exp: ":1337\r\n" },
+            { num: -1337, exp: ":-1337\r\n" },
+        ];
+        for (let i = 0; i < tests.length; ++i) {
+            const t = tests[i];
+            let buf = new Builder().addInt(t.num).out();
+            for (let j = 0; j < t.exp.length; ++j) {
+                const got = buf[j];
+                const exp = t.exp.charCodeAt(j);
+                expect(got).toBe(exp);
+            }
         }
-
     });
 });

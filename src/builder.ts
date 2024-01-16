@@ -29,7 +29,8 @@ export class Builder {
             throw new Error(`${int} should be a whole number`);
         }
         this.buffer.pushChar(INT_TYPE_BYTE);
-        this.buffer.add64BitInteger(int);
+        const s = int.toString();
+        this.buffer.pushString(s);
         this.addEnd();
         return this;
     }
