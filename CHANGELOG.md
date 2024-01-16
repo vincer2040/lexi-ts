@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.12
+
+### Patch Changes
+
+- e046732: add push, pop, enque, and deque methods
+
 ## 0.0.11
 
 ### Patch Changes
