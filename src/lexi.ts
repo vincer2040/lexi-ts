@@ -2,7 +2,7 @@ import { Socket, createConnection } from "net";
 import { Builder } from "./builder";
 import { DynamicBuffer } from "./dynamicBuffer";
 import { Parser } from "./parser";
-import { extractData } from "./lexiData";
+import { LexiDataT, extractData } from "./lexiData";
 
 export class LexiClient {
     private builder: Builder;
@@ -32,7 +32,7 @@ export class LexiClient {
         return this.connected;
     }
 
-    public async set(key: string, value: string): Promise<string | null> {
+    public async set(key: string, value: string): Promise<LexiDataT> {
         const buf = this.builder
             .reset()
             .addArray(3)
@@ -45,7 +45,7 @@ export class LexiClient {
         return this.parse(read);
     }
 
-    public async get(key: string): Promise<string | null> {
+    public async get(key: string): Promise<LexiDataT> {
         const buf = this.builder
             .reset()
             .addArray(2)
@@ -57,7 +57,7 @@ export class LexiClient {
         return this.parse(read);
     }
 
-    public async del(key: string): Promise<string | null> {
+    public async del(key: string): Promise<LexiDataT> {
         const buf = this.builder
             .reset()
             .addArray(2)
@@ -69,7 +69,7 @@ export class LexiClient {
         return this.parse(read);
     }
 
-    private parse(buf: Buffer): string | null {
+    private parse(buf: Buffer): LexiDataT {
         this.parser.reset(buf);
         const parsed = this.parser.parse();
         const data = extractData(parsed);
@@ -87,7 +87,6 @@ export class LexiClient {
                 while ((chunk = this.socket.read()) !== null) {
                     this.readBuf.append(chunk);
                 }
-                this.socket.removeAllListeners();
                 res(this.readBuf.out());
             } catch (e) {
                 rej(e);
