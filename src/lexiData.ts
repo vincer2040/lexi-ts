@@ -4,20 +4,25 @@ export enum Type {
     Ok,
     None,
     String,
+    Int,
 }
+
+export type LexiDataT = null | string | number;
 
 export type LexiData = {
     type: Type,
-    data: null | string;
+    data: LexiDataT,
 }
 
-export function extractData(lexiData: LexiData): null | string {
+export function extractData(lexiData: LexiData): LexiDataT {
     switch (lexiData.type) {
         case Type.Ok:
             return "OK";
         case Type.None:
             return "NONE";
         case Type.String:
+            return lexiData.data;
+        case Type.Int:
             return lexiData.data;
         default:
             break;
