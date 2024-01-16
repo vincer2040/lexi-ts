@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Parser } from "../src/parser";
 import { Type } from "../src/lexiData";
+import { umask } from "process";
 
 type SimpleTest = {
     input: Buffer,
@@ -67,4 +68,13 @@ describe("parser", () => {
             expect(dbl).toBe(test.exp);
         }
     });
+
+    it("can parse errors", () => {
+        const input = Buffer.from("-Unauthenticated\r\n");
+        const parser = new Parser(input);
+        const data = parser.parse();
+        expect(data.type).toBe(Type.Error);
+        const e = data.data as string;
+        expect(e).toBe("Unauthenticated");
+    })
 });

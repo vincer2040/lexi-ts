@@ -6,6 +6,7 @@ export enum Type {
     String,
     Int,
     Double,
+    Error,
 }
 
 export type LexiDataT = null | string | number;
@@ -26,6 +27,8 @@ export function extractData(lexiData: LexiData): LexiDataT {
         case Type.Int:
             return lexiData.data;
         case Type.Double:
+            return lexiData.data;
+        case Type.Error:
             return lexiData.data;
         default:
             break;

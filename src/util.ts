@@ -5,6 +5,7 @@ export const STRING_TYPE_BYTE = 36; // $
 export const SIMPLE_TYPE_BYTE = 43; // +
 export const INT_TYPE_BYTE = 58; // :
 export const DOUBLE_TYPE_BYTE = 44; // ,
+export const ERROR_TYPE_BYTE = 45; // -
 export const RET_CAR = 13 // \r
 export const NEW_LINE = 10 // \n
 

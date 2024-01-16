@@ -1,6 +1,6 @@
 import { DynamicBuffer } from "./dynamicBuffer";
 import { Type, type LexiData } from "./lexiData";
-import { DOUBLE_TYPE_BYTE, INT_TYPE_BYTE, NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, STRING_TYPE_BYTE, isDigit } from "./util";
+import { DOUBLE_TYPE_BYTE, ERROR_TYPE_BYTE, INT_TYPE_BYTE, NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, STRING_TYPE_BYTE, isDigit } from "./util";
 
 type SimpleLookup = {
     str: string,
@@ -41,6 +41,8 @@ export class Parser {
                 return this.parseInteger();
             case DOUBLE_TYPE_BYTE:
                 return this.parseDouble();
+            case ERROR_TYPE_BYTE:
+                return this.parseError();
             default:
                 break;
         }
@@ -136,6 +138,25 @@ export class Parser {
         res = parseFloat(s);
         this.readChar();
         return { type: Type.Double, data: res };
+    }
+
+    private parseError(): LexiData {
+        this.readChar();
+        let buf = new DynamicBuffer();
+        while (this.ch != RET_CAR && this.ch != 0) {
+            buf.pushChar(this.ch);
+            this.readChar();
+        }
+        let s = buf.out().toString();
+        if (!this.curCharIs(RET_CAR)) {
+            return { type: Type.Unkown, data: null };
+        }
+        if (!this.expectPeek(NEW_LINE)) {
+            return { type: Type.Unkown, data: null };
+        }
+        this.readChar();
+        let res = s.substring(0, s.indexOf('\0'));
+        return { type: Type.Error, data: res };
     }
 
     private parseLength(): number {
