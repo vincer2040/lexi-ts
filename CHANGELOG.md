@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.9
+
+### Patch Changes
+
+- 3935e90: add ability to use doubles with the server
+
 ## 0.0.8
 
 ### Patch Changes
