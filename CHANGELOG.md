@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.10
+
+### Patch Changes
+
+- cc94b3e: fix multiple bugs
+
 ## 0.0.9
 
 ### Patch Changes
