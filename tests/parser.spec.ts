@@ -7,6 +7,11 @@ type SimpleTest = {
     exp: Type,
 };
 
+type IntTest = {
+    input: Buffer,
+    exp: number,
+};
+
 describe("parser", () => {
     it("can parse strings", () => {
         const input = Buffer.from("$3\r\nfoo\r\n");
@@ -28,6 +33,21 @@ describe("parser", () => {
             const data = parser.parse();
             expect(data.type).toBe(test.exp);
             expect(data.data).toBeNull();
+        }
+    });
+
+    it("can parse integers", () => {
+        const tests: IntTest[] = [
+            { input: Buffer.from(":1337\r\n"), exp: 1337 },
+            { input: Buffer.from(":-1337\r\n"), exp: -1337 },
+        ];
+
+        for (const test of tests) {
+            const parser = new Parser(test.input);
+            const data = parser.parse();
+            expect(data.type).toBe(Type.Int);
+            const int = data.data as number;
+            expect(int).toBe(test.exp);
         }
     });
 });
