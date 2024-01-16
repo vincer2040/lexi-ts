@@ -1,5 +1,12 @@
 # lexi-ts
 
+## 0.0.8
+
+### Patch Changes
+
+- cecfea9: proper protocol for integers
+- 3480b2f: fix import that doesn't exist
+
 ## 0.0.7
 
 ### Patch Changes
