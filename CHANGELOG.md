@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.11
+
+### Patch Changes
+
+- 699e5f5: add auth method
+
 ## 0.0.10
 
 ### Patch Changes
