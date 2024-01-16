@@ -25,6 +25,9 @@ export class Parser {
         }
         this.pos = 0;
         this.ch = 0;
+        if (!input) {
+            return;
+        }
         this.readChar();
     }
 
@@ -35,7 +38,7 @@ export class Parser {
             case SIMPLE_TYPE_BYTE:
                 return this.parseSimple();
             case INT_TYPE_BYTE:
-                return this.parseIntegeer();
+                return this.parseInteger();
             case DOUBLE_TYPE_BYTE:
                 return this.parseDouble();
             default:
@@ -95,7 +98,7 @@ export class Parser {
         return { type, data: null };
     }
 
-    private parseIntegeer(): LexiData {
+    private parseInteger(): LexiData {
         this.readChar();
         let res = 0;
         let buf = new DynamicBuffer();
