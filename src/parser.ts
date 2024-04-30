@@ -1,5 +1,5 @@
 import { DataType, LexiData } from "./types.js";
-import { NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, BULK_STRING_TYPE_BYTE, ZERO_BYTE, INT_TYPE_BYTE, DOUBLE_TYPE_BYTE, BULK_ERROR_BYTE, SIMPLE_ERROR_BYTE } from "./util";
+import { NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, BULK_STRING_TYPE_BYTE, ZERO_BYTE, INT_TYPE_BYTE, DOUBLE_TYPE_BYTE, BULK_ERROR_BYTE, SIMPLE_ERROR_BYTE } from "./util.js";
 
 export class Parser {
     private buf: Buffer;
