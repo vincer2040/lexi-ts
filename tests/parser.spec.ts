@@ -1,80 +1,102 @@
 import { describe, it, expect } from "vitest";
 import { Parser } from "../src/parser";
-import { Type } from "../src/lexiData";
-import { umask } from "process";
-
-type SimpleTest = {
-    input: Buffer,
-    exp: Type,
-};
-
-type IntTest = {
-    input: Buffer,
-    exp: number,
-};
-
-type DoubleTest = IntTest;
+import { DataType } from "../src/types";
 
 describe("parser", () => {
-    it("can parse strings", () => {
-        const input = Buffer.from("$3\r\nfoo\r\n");
-        const parser = new Parser(input);
-        const data = parser.parse();
-        expect(data.type).toBe(Type.String);
-        expect(data.data).toBeTypeOf("string");
-        expect(data.data).toBe("foo");
-    });
+    function checkError(p: Parser) {
+        if (p.hasError()) {
+            console.log(p.getError());
+        }
+        expect(p.hasError()).toBeFalsy();
+    }
 
     it("can parse simple strings", () => {
-        const tests: SimpleTest[] = [
-            { input: Buffer.from("+OK\r\n"), exp: Type.Ok },
-            { input: Buffer.from("+NONE\r\n"), exp: Type.None },
+        const tests = [
+            { input: "+OK\r\n", exp: "OK" },
+            { input: "+PONG\r\n", exp: "PONG" },
         ];
-
         for (const test of tests) {
-            const parser = new Parser(test.input);
-            const data = parser.parse();
-            expect(data.type).toBe(test.exp);
-            expect(data.data).toBeNull();
+            const input = Buffer.from(test.input);
+            const parser = new Parser(input);
+            const parsed = parser.parse();
+            checkError(parser);
+            expect(parsed.type).toBe(DataType.String);
+            expect(parsed.data).toBe(test.exp);
+        }
+    });
+
+    it("can parse bulk strings", () => {
+        const tests = [
+            { input: "$3\r\nfoo\r\n", exp: "foo" },
+            { input: "$10\r\nfoo\r\nfoo\r\n\r\n", exp: "foo\r\nfoo\r\n" },
+        ];
+        for (const test of tests) {
+            const input = Buffer.from(test.input);
+            const parser = new Parser(input);
+            const parsed = parser.parse();
+            checkError(parser);
+            expect(parsed.type).toBe(DataType.String);
+            expect(parsed.data).toBe(test.exp);
         }
     });
 
     it("can parse integers", () => {
-        const tests: IntTest[] = [
-            { input: Buffer.from(":1337\r\n"), exp: 1337 },
-            { input: Buffer.from(":-1337\r\n"), exp: -1337 },
+        const tests = [
+            { input: ":123\r\n", exp: 123 },
+            { input: ":12345\r\n", exp: 12345 },
         ];
-
         for (const test of tests) {
-            const parser = new Parser(test.input);
-            const data = parser.parse();
-            expect(data.type).toBe(Type.Int);
-            const int = data.data as number;
-            expect(int).toBe(test.exp);
+            const input = Buffer.from(test.input);
+            const parser = new Parser(input);
+            const parsed = parser.parse();
+            checkError(parser);
+            expect(parsed.type).toBe(DataType.Integer);
+            expect(parsed.data).toBe(test.exp);
         }
     });
 
     it("can parse doubles", () => {
-        const tests: DoubleTest[] = [
-            { input: Buffer.from(",1337.1337\r\n"), exp: 1337.1337 },
-            { input: Buffer.from(",1337\r\n"), exp: 1337 },
-            { input: Buffer.from(",-1337\r\n"), exp: -1337 },
+        const tests = [
+            { input: ",123\r\n", exp: 123 },
+            { input: ",12345.1234\r\n", exp: 12345.1234 },
         ];
         for (const test of tests) {
-            const parser = new Parser(test.input);
-            const data = parser.parse();
-            expect(data.type).toBe(Type.Double);
-            const dbl = data.data as number;
-            expect(dbl).toBe(test.exp);
+            const input = Buffer.from(test.input);
+            const parser = new Parser(input);
+            const parsed = parser.parse();
+            checkError(parser);
+            expect(parsed.type).toBe(DataType.Double);
+            expect(parsed.data).toBe(test.exp);
         }
     });
 
-    it("can parse errors", () => {
-        const input = Buffer.from("-Unauthenticated\r\n");
-        const parser = new Parser(input);
-        const data = parser.parse();
-        expect(data.type).toBe(Type.Error);
-        const e = data.data as string;
-        expect(e).toBe("Unauthenticated");
-    })
+    it("can parse simple errors", () => {
+        const tests = [
+            { input: "-ERR\r\n", exp: "ERR" },
+            { input: "-ENOACCESS\r\n", exp: "ENOACCESS" },
+        ];
+        for (const test of tests) {
+            const input = Buffer.from(test.input);
+            const parser = new Parser(input);
+            const parsed = parser.parse();
+            checkError(parser);
+            expect(parsed.type).toBe(DataType.Error);
+            expect(parsed.data).toBe(test.exp);
+        }
+    });
+
+    it("can parse bulk errors", () => {
+        const tests = [
+            { input: "!3\r\nfoo\r\n", exp: "foo" },
+            { input: "!10\r\nfoo\r\nfoo\r\n\r\n", exp: "foo\r\nfoo\r\n" },
+        ];
+        for (const test of tests) {
+            const input = Buffer.from(test.input);
+            const parser = new Parser(input);
+            const parsed = parser.parse();
+            checkError(parser);
+            expect(parsed.type).toBe(DataType.Error);
+            expect(parsed.data).toBe(test.exp);
+        }
+    });
 });

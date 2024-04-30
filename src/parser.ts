@@ -1,213 +1,192 @@
-import { DynamicBuffer } from "./dynamicBuffer";
-import { Type, type LexiData } from "./lexiData";
-import { DOUBLE_TYPE_BYTE, ERROR_TYPE_BYTE, INT_TYPE_BYTE, NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, STRING_TYPE_BYTE, isDigit } from "./util";
-
-type SimpleLookup = {
-    str: string,
-    type: Type,
-}
-
-const SIMPLE_LOOKUPS: SimpleLookup[] = [
-    { str: "OK", type: Type.Ok },
-    { str: "NONE", type: Type.None },
-];
-
-const SIMPLE_LOOKUPS_LEN = SIMPLE_LOOKUPS.length;
+import { DataType, LexiData } from "./types";
+import { NEW_LINE, RET_CAR, SIMPLE_TYPE_BYTE, BULK_STRING_TYPE_BYTE, ZERO_BYTE, INT_TYPE_BYTE, DOUBLE_TYPE_BYTE, BULK_ERROR_BYTE, SIMPLE_ERROR_BYTE } from "./util";
 
 export class Parser {
-    private input: Buffer;
+    private buf: Buffer;
     private pos: number;
-    private ch: number;
+    private length: number;
+    private byte: number;
+    private errorState: boolean;
+    private error: string;
 
-    constructor(input?: Buffer) {
-        if (input) {
-            this.input = input;
-        }
+    constructor(buf: Buffer) {
+        this.buf = buf;
         this.pos = 0;
-        this.ch = 0;
-        if (!input) {
-            return;
-        }
-        this.readChar();
+        this.length = buf.length;
+        this.byte = 0;
+        this.errorState = false;
+        this.error = "";
+        this.readByte();
+    }
+
+    public hasError(): boolean {
+        return this.errorState;
+    }
+
+    public getError(): string {
+        return this.error;
     }
 
     public parse(): LexiData {
-        switch (this.ch) {
-            case STRING_TYPE_BYTE:
-                return this.parseString();
+        return this.parseData();
+    }
+
+    private parseData(): LexiData {
+        switch (this.byte) {
             case SIMPLE_TYPE_BYTE:
-                return this.parseSimple();
+                return this.parseSimpleString();
+            case BULK_STRING_TYPE_BYTE:
+                return this.parseBulkString();
             case INT_TYPE_BYTE:
                 return this.parseInteger();
             case DOUBLE_TYPE_BYTE:
                 return this.parseDouble();
-            case ERROR_TYPE_BYTE:
-                return this.parseError();
-            default:
-                break;
+            case SIMPLE_ERROR_BYTE:
+                return this.parseSimpleError();
+            case BULK_ERROR_BYTE:
+                return this.parseBulkError();
         }
-        return { type: Type.Unkown, data: null };
+        return { type: DataType.Illegal, data: "unknown type byte " + String.fromCharCode(this.byte) };
     }
 
-    public reset(input: Buffer): void {
-        this.input = input;
-        this.ch = 0;
-        this.pos = 0;
-        this.readChar();
+    private parseSimpleString(): LexiData {
+        this.readByte();
+        let res = "";
+        while (this.byte !== RET_CAR && this.byte !== 0) {
+            res += String.fromCharCode(this.byte);
+            this.readByte();
+        }
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after simple string" };
+        }
+        return { type: DataType.String, data: res };
     }
 
-    private parseString(): LexiData {
-        this.readChar();
+    private parseBulkString(): LexiData {
+        this.readByte();
         const length = this.parseLength();
-        if (!this.curCharIs(RET_CAR)) {
-            return { type: Type.Unkown, data: null };
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after length" };
         }
-        if (!this.expectPeek(NEW_LINE)) {
-            return { type: Type.Unkown, data: null };
-        }
-        this.readChar();
-
-        let string = Buffer.alloc(length);
+        this.readByte();
+        let res = "";
         for (let i = 0; i < length; ++i) {
-            string[i] = this.ch;
-            this.readChar();
+            res += String.fromCharCode(this.byte);
+            this.readByte();
         }
-        if (!this.curCharIs(RET_CAR)) {
-            return { type: Type.Unkown, data: null };
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after bulk string" };
         }
-        if (!this.expectPeek(NEW_LINE)) {
-            return { type: Type.Unkown, data: null };
-        }
-        this.readChar();
-        return { type: Type.String, data: string.toString() };
-    }
-
-    private parseSimple(): LexiData {
-        this.readChar();
-        let buf = new DynamicBuffer();
-        while (this.ch != 0 && this.ch != RET_CAR) {
-            buf.pushChar(this.ch);
-            this.readChar();
-        }
-        if (!this.curCharIs(RET_CAR)) {
-            return { type: Type.Unkown, data: null };
-        }
-        if (!this.expectPeek(NEW_LINE)) {
-            return { type: Type.Unkown, data: null };
-        }
-        this.readChar();
-        let type = this.lookupSimple(buf.out().toString());
-        return { type, data: null };
+        return { type: DataType.String, data: res };
     }
 
     private parseInteger(): LexiData {
-        this.readChar();
-        let res = 0;
-        let buf = new DynamicBuffer();
-        while (this.ch != RET_CAR && this.ch != 0) {
-            buf.pushChar(this.ch);
-            this.readChar();
+        let str = "";
+        this.readByte();
+        while (this.byte !== RET_CAR && this.byte !== 0) {
+            str += String.fromCharCode(this.byte);
+            this.readByte();
         }
-        let s = buf.out().toString();
-        if (!this.curCharIs(RET_CAR)) {
-            return { type: Type.Unkown, data: null };
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after integer" };
         }
-        if (!this.expectPeek(NEW_LINE)) {
-            return { type: Type.Unkown, data: null };
+        const num = parseInt(str);
+        if (isNaN(num)) {
+            return { type: DataType.Illegal, data: `expected integer, ${str} is not an integer` };
         }
-        res = parseInt(s);
-        this.readChar();
-        return { type: Type.Int, data: res };
+        return { type: DataType.Integer, data: num };
     }
 
     private parseDouble(): LexiData {
-        this.readChar();
-        let res = 0;
-        let buf = new DynamicBuffer();
-        while (this.ch != RET_CAR && this.ch != 0) {
-            buf.pushChar(this.ch);
-            this.readChar();
+        let str = "";
+        this.readByte();
+        while (this.byte !== RET_CAR && this.byte !== 0) {
+            str += String.fromCharCode(this.byte);
+            this.readByte();
         }
-        let s = buf.out().toString();
-        if (!this.curCharIs(RET_CAR)) {
-            return { type: Type.Unkown, data: null };
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after integer" };
         }
-        if (!this.expectPeek(NEW_LINE)) {
-            return { type: Type.Unkown, data: null };
+        const num = parseFloat(str);
+        if (isNaN(num)) {
+            return { type: DataType.Illegal, data: `expected double, ${str} is not an double` };
         }
-        res = parseFloat(s);
-        this.readChar();
-        return { type: Type.Double, data: res };
+        return { type: DataType.Double, data: num };
+
     }
 
-    private parseError(): LexiData {
-        this.readChar();
-        let buf = new DynamicBuffer();
-        while (this.ch != RET_CAR && this.ch != 0) {
-            buf.pushChar(this.ch);
-            this.readChar();
+    private parseSimpleError(): LexiData {
+        this.readByte();
+        let res = "";
+        while (this.byte !== RET_CAR && this.byte !== 0) {
+            res += String.fromCharCode(this.byte);
+            this.readByte();
         }
-        let s = buf.out().toString();
-        if (!this.curCharIs(RET_CAR)) {
-            return { type: Type.Unkown, data: null };
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after simple string" };
         }
-        if (!this.expectPeek(NEW_LINE)) {
-            return { type: Type.Unkown, data: null };
+        return { type: DataType.Error, data: res };
+    }
+
+    private parseBulkError(): LexiData {
+        this.readByte();
+        const length = this.parseLength();
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after length" };
         }
-        this.readChar();
-        let res = s.substring(0, s.indexOf('\0'));
-        return { type: Type.Error, data: res };
+        this.readByte();
+        let res = "";
+        for (let i = 0; i < length; ++i) {
+            res += String.fromCharCode(this.byte);
+            this.readByte();
+        }
+        if (!this.expectEnd()) {
+            return { type: DataType.Illegal, data: "expected clrf after bulk string" };
+        }
+        return { type: DataType.Error, data: res };
     }
 
     private parseLength(): number {
         let res = 0;
-        while (isDigit(this.ch)) {
-            res = (res * 10) + (this.ch - 48);
-            this.readChar();
+        while (this.byte !== RET_CAR && this.byte !== 0) {
+            res = (res * 10) + (this.byte - ZERO_BYTE);
+            this.readByte();
         }
         return res;
     }
 
-    private lookupSimple(str: string): Type {
-        for (let i = 0; i < SIMPLE_LOOKUPS_LEN; ++i) {
-            const simpleLookup = SIMPLE_LOOKUPS[i];
-            if (simpleLookup.str.localeCompare(str) === 0) {
-                return simpleLookup.type;
-            }
+    private expectEnd(): boolean {
+        if (this.byte !== RET_CAR) {
+            return false;
         }
-        return Type.Unkown;
+        if (!this.expectPeek(NEW_LINE)) {
+            return false;
+        }
+        return true;
     }
 
-    private peekChar(): number {
-        if (this.pos >= this.input.length) {
+    private expectPeek(byte: number): boolean {
+        if (this.peek() !== byte) {
+            return false;
+        }
+        this.readByte();
+        return true;
+    }
+
+    private peek(): number {
+        if (this.pos >= this.length) {
             return 0;
         }
-        return this.input[this.pos];
+        return this.buf[this.pos];
     }
 
-    private curCharIs(char: number): boolean {
-        return this.ch === char;
-    }
-
-    private peekCharIs(char: number): boolean {
-        return this.peekChar() === char;
-    }
-
-    private expectPeek(char: number): boolean {
-        if (this.peekCharIs(char)) {
-            this.readChar();
-            return true;
-        }
-
-        return false;
-    }
-
-    private readChar(): void {
-        if (this.pos >= this.input.length) {
-            this.ch = 0;
+    private readByte() {
+        if (this.pos >= this.length) {
+            this.byte = 0;
             return;
         }
-        this.ch = this.input[this.pos];
+
+        this.byte = this.buf[this.pos];
         this.pos++;
     }
 }
