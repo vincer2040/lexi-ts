@@ -1,4 +1,4 @@
-import { DynamicBuffer } from "./dynamicBuffer";
+import { DynamicBuffer } from "./dynamicBuffer.js";
 import { ARRAY_TYPE_BYTE, BULK_STRING_TYPE_BYTE, RET_CAR, NEW_LINE, INT_TYPE_BYTE, DOUBLE_TYPE_BYTE, SIMPLE_TYPE_BYTE } from "./util";
 
 export class Builder {

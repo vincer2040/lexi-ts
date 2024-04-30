@@ -1,5 +1,3 @@
-
-
 export const ARRAY_TYPE_BYTE = 42; // *
 export const BULK_STRING_TYPE_BYTE = 36; // $
 export const SIMPLE_TYPE_BYTE = 43; // +
