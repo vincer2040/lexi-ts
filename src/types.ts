@@ -1,3 +1,8 @@
+export type LexiConfig = {
+    ip: string,
+    port: number,
+    onConnect: () => void | null | undefined,
+}
 
 export enum DataType {
     Illegal,
