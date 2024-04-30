@@ -5,12 +5,13 @@
     "main": "dist/lexi.js",
     "module": "dist/lexi.mjs",
     "types": "dist/lexi.d.ts",
+    "type": "module",
     "scripts": {
         "build": "tsup src/lexi.ts --format cjs,esm --dts",
         "lint": "tsc",
         "dev": "vitest",
         "test": "vitest run",
-        "ex": "pnpm run build && node ./examples/main.mjs",
+        "ex": "pnpm run build && cd examples && pnpm start",
         "ci": "pnpm run lint && pnpm run test && pnpm run build",
         "release": "pnpm run lint && pnpm run test && pnpm run build && changeset publish"
     },

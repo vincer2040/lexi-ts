@@ -1,140 +1,101 @@
 import { Socket, createConnection } from "net";
-import { Builder } from "./builder";
-import { DynamicBuffer } from "./dynamicBuffer";
-import { Parser } from "./parser";
-import { LexiDataT, extractData } from "./lexiData";
+import { Builder } from "./builder.js";
+import { DataType, LexiConfig, LexiData } from "./types.js";
+import { DynamicBuffer } from "./dynamicBuffer.js";
+import { Parser } from "./parser.js";
 
 export class LexiClient {
-    private builder: Builder;
-    private socket: Socket | undefined;
-    private connected: boolean;
-    private address: string;
+    private ip: string;
     private port: number;
+    private builder: Builder;
+    private socket: Socket;
+    private connected: boolean;
+    private onConnect: () => void | null | undefined;
     private readBuf: DynamicBuffer;
-    private parser: Parser;
 
-    constructor(address: string, port: number) {
+    constructor(config: LexiConfig) {
+        this.ip = config.ip;
+        this.port = config.port;
         this.builder = new Builder();
         this.connected = false;
-        this.address = address;
-        this.port = port;
-        this.socket = undefined;
         this.readBuf = new DynamicBuffer();
-        this.parser = new Parser();
+        this.onConnect = config.onConnect;
     }
 
-    public connect(): void {
-        this.socket = createConnection(this.port, this.address);
-        this.connected = true;
+    public connect() {
+        this.socket = createConnection({ port: this.port, host: this.ip }, this.onConnect);
     }
 
     public isConnected(): boolean {
         return this.connected;
     }
 
-    public async authenticate(username: string, password: string): Promise<LexiDataT> {
+    public async set(key: string, value: string): Promise<string> {
         const buf = this.builder
             .reset()
             .addArray(3)
-            .addString("AUTH")
-            .addString(username)
-            .addString(password)
+            .addSimpleString("SET")
+            .addBulkString(key)
+            .addBulkString(value)
             .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
+        this.write(buf);
+        const received = await this.read();
+        const parsed = this.parse(received);
+        if (parsed.type === DataType.Error) {
+            return parsed.data;
+        }
+        if (parsed.type !== DataType.String) {
+            throw new Error("expected string, got " + parsed.type);
+        }
+        return parsed.data;
     }
 
-    public async set(key: string, value: string): Promise<LexiDataT> {
-        const buf = this.builder
-            .reset()
-            .addArray(3)
-            .addString("SET")
-            .addString(key)
-            .addString(value)
-            .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
-    }
-
-    public async get(key: string): Promise<LexiDataT> {
+    public async get(key: string): Promise<string> {
         const buf = this.builder
             .reset()
             .addArray(2)
-            .addString("GET")
-            .addString(key)
+            .addSimpleString("GET")
+            .addBulkString(key)
             .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
+        this.write(buf);
+        const received = await this.read();
+        const parsed = this.parse(received);
+        if (parsed.type === DataType.Error) {
+            return parsed.data;
+        }
+        if (parsed.type !== DataType.String) {
+            throw new Error("expected string, got " + parsed.type);
+        }
+        return parsed.data;
     }
 
-    public async del(key: string): Promise<LexiDataT> {
+    public async del(key: string): Promise<number | string> {
         const buf = this.builder
             .reset()
             .addArray(2)
-            .addString("DEL")
-            .addString(key)
+            .addSimpleString("DEL")
+            .addBulkString(key)
             .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
-    }
+        this.write(buf);
+        const received = await this.read();
+        const parsed = this.parse(received);
+        if (parsed.type === DataType.Error) {
+            return parsed.data;
+        }
+        if (parsed.type !== DataType.Integer) {
+            throw new Error("expected integer, got " + parsed.type);
+        }
+        return parsed.data;
 
-    public async push(value: string): Promise<LexiDataT> {
-        const buf = this.builder
-            .reset()
-            .addArray(2)
-            .addString("PUSH")
-            .addString(value)
-            .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
-    }
-
-    public async pop(): Promise<LexiDataT> {
-        const buf = this.builder
-            .reset()
-            .addString("POP")
-            .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
-    }
-
-    public async enque(value: string): Promise<LexiDataT> {
-        const buf = this.builder
-            .reset()
-            .addArray(2)
-            .addString("ENQUE")
-            .addString(value)
-            .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
-    }
-
-    public async deque(): Promise<LexiDataT> {
-        const buf = this.builder
-            .reset()
-            .addString("DEQUE")
-            .out();
-        await this.write(buf);
-        const read = await this.read();
-        return this.parse(read);
     }
 
     public close() {
         this.socket.destroy();
     }
 
-    private parse(buf: Buffer): LexiDataT {
-        this.parser.reset(buf);
-        const parsed = this.parser.parse();
-        const data = extractData(parsed);
-        return data;
+    private parse(buf: Buffer): LexiData {
+        const parser = new Parser(buf);
+        return parser.parse();
     }
 
     private read(): Promise<Buffer> {
@@ -155,16 +116,10 @@ export class LexiClient {
         });
     }
 
-    private write(buf: Buffer): Promise<void> {
-        return new Promise((res, rej) => {
-            try {
-                // I really hate that there is not write method with a length to write
-                this.socket.write(buf, () => {
-                    res();
-                });
-            } catch (e) {
-                rej(e);
-            }
-        });
+    private write(buf: Buffer) {
+        if (!this.socket.writable) {
+            throw new Error("socket not writable");
+        }
+        this.socket.write(buf);
     }
 }
