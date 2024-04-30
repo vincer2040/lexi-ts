@@ -30,6 +30,44 @@ export class LexiClient {
         return this.connected;
     }
 
+    public async ping(): Promise<string> {
+        const buf = this.builder
+            .reset()
+            .addSimpleString("PING")
+            .out();
+        this.write(buf);
+        const received = await this.read();
+        const parsed = this.parse(received);
+        if (parsed.type === DataType.Error) {
+            return parsed.data;
+        }
+        if (parsed.type !== DataType.String) {
+            throw new Error("expected string, got " + parsed.type);
+        }
+        return parsed.data;
+
+    }
+
+    public async auth(username: string, password: string): Promise<string> {
+        const buf = this.builder
+            .reset()
+            .addArray(3)
+            .addSimpleString("AUTH")
+            .addBulkString(username)
+            .addBulkString(password)
+            .out();
+        this.write(buf);
+        const received = await this.read();
+        const parsed = this.parse(received);
+        if (parsed.type === DataType.Error) {
+            return parsed.data;
+        }
+        if (parsed.type !== DataType.String) {
+            throw new Error("expected string, got " + parsed.type);
+        }
+        return parsed.data;
+    }
+
     public async set(key: string, value: string): Promise<string> {
         const buf = this.builder
             .reset()

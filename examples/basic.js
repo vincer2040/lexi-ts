@@ -5,6 +5,9 @@ async function main() {
 
     client.connect();
 
+    const pingRes = await client.ping();
+    console.log(pingRes);
+
     const setRes = await client.set("foo", "bar");
 
     console.log(setRes);
