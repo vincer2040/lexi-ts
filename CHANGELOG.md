@@ -1,5 +1,11 @@
 # lexi-ts
 
+## 0.0.14
+
+### Patch Changes
+
+- 1963dad: rewrite to accomodate current protocol
+
 ## 0.0.13
 
 ### Patch Changes
